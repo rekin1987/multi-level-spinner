@@ -4,6 +4,7 @@ package emget.pl.widgets.multilevelspinner;
 import android.content.Context;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,11 +22,13 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
     private List<SpinnerItem> mItems;
     private LayoutInflater mInflater;
+    private ListItemClickCallback mListItemClickCallback;
 
-    public MultiLevelSpinnerAdapter(@NonNull Context context, @LayoutRes int resource, List<SpinnerItem> items) {
+    public MultiLevelSpinnerAdapter(@NonNull Context context, @LayoutRes int resource, List<SpinnerItem> items, ListItemClickCallback callback) {
         super(context, resource);
         mItems = items;
         mInflater = LayoutInflater.from(context);
+        mListItemClickCallback = callback;
     }
 
     @Override
@@ -43,10 +46,17 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         return getExpandedItemsCount();
     }
 
-    public View getCustomView(int position, View convertView, ViewGroup parent) {
+    public View getCustomView(final int position, View convertView, ViewGroup parent) {
 
         View row = mInflater.inflate(R.layout.custom_spinner_item, parent, false);
 
+        row.findViewById(R.id.row_wrapper).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d("aaa", "onclick");
+                mListItemClickCallback.onItemClicked(position);
+            }
+        });
 
         CheckBox checkbox = (CheckBox) row.findViewById(R.id.checkbox);
         TextView textView = (TextView) row.findViewById(R.id.text);

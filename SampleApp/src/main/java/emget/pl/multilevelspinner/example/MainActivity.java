@@ -2,6 +2,7 @@ package emget.pl.multilevelspinner.example;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import emget.pl.multilevelspinner.R;
+import emget.pl.widgets.multilevelspinner.ListItemClickCallback;
 import emget.pl.widgets.multilevelspinner.MultiLevelSpinner;
 import emget.pl.widgets.multilevelspinner.MultiLevelSpinnerAdapter;
 import emget.pl.widgets.multilevelspinner.model.SpinnerItem;
@@ -28,14 +30,10 @@ public class MainActivity extends AppCompatActivity {
         mItems = prepareList();
 
         MultiLevelSpinner spinner = (MultiLevelSpinner) findViewById(R.id.spinner);
-        mAdapter = new MultiLevelSpinnerAdapter(this, R.layout.custom_spinner_item, mItems);
-
-        spinner.setAdapter(mAdapter);
-
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        mAdapter = new MultiLevelSpinnerAdapter(this, R.layout.custom_spinner_item, mItems, new ListItemClickCallback() {
             @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                SpinnerItem item = mItems.get(i);
+            public void onItemClicked(int position) {
+                SpinnerItem item = mItems.get(position);
                 if(item instanceof SpinnerItemHeader){
                     item.setExpanded(true);
                     for (SpinnerItem subItem : ((SpinnerItemHeader) item).getChildren()){
@@ -44,12 +42,30 @@ public class MainActivity extends AppCompatActivity {
                     mAdapter.notifyDataSetChanged();
                 }
             }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
         });
+
+        spinner.setAdapter(mAdapter);
+
+
+
+//        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+//            @Override
+//            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+//                SpinnerItem item = mItems.get(i);
+//                if(item instanceof SpinnerItemHeader){
+//                    item.setExpanded(true);
+//                    for (SpinnerItem subItem : ((SpinnerItemHeader) item).getChildren()){
+//                        subItem.setExpanded(true);
+//                    }
+//                    mAdapter.notifyDataSetChanged();
+//                }
+//            }
+//
+//            @Override
+//            public void onNothingSelected(AdapterView<?> adapterView) {
+//
+//            }
+//        });
     }
 
     private List<SpinnerItem> prepareList(){
