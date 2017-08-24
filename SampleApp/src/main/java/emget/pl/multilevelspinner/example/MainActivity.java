@@ -34,17 +34,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onRowClicked(int position) {
-                SpinnerItem item = mItems.get(position);
-                if(item instanceof SpinnerItemHeader){
-                    if((item.isExpanded())){
-                        // will tell all children to collapse
-                        item.setExpanded(false);
-                    } else {
-                        // will tell all children to expand
-                        item.setExpanded(true);
-                    }
-                    mAdapter.notifyDataSetChanged();
-                }
             }
 
             @Override
@@ -59,25 +48,25 @@ public class MainActivity extends AppCompatActivity {
 
     private List<SpinnerItem> prepareList(){
         List<SpinnerItem> list = new ArrayList<>();
-        SpinnerItemHeader chemicals = new SpinnerItemHeader("Chemicals");
-        chemicals.addChild(new SpinnerItemElement("domestos"));
-        chemicals.addChild(new SpinnerItemElement("cif"));
+        SpinnerItemHeader chemicals = new SpinnerItemHeader("id1","Chemicals");
+        chemicals.addChild(new SpinnerItemElement("id1_1","domestos"));
+        chemicals.addChild(new SpinnerItemElement("id1_2","cif"));
         list.add(chemicals);
 
-        SpinnerItemHeader drinks = new SpinnerItemHeader("Drinks");
-        SpinnerItemHeader still = new SpinnerItemHeader("Still");
-        SpinnerItemHeader sparkling = new SpinnerItemHeader("Sparkling");
-        still.addChild(new SpinnerItemElement("water"));
-        still.addChild(new SpinnerItemElement("lemoniade"));
-        sparkling.addChild(new SpinnerItemElement("cola"));
+        SpinnerItemHeader drinks = new SpinnerItemHeader("id2","Drinks");
+        SpinnerItemHeader still = new SpinnerItemHeader("id2_1","Still");
+        SpinnerItemHeader sparkling = new SpinnerItemHeader("id2_2","Sparkling");
+        still.addChild(new SpinnerItemElement("id2_1_1","water"));
+        still.addChild(new SpinnerItemElement("id2_1_2","lemoniade"));
+        sparkling.addChild(new SpinnerItemElement("id2_2_1","cola"));
         drinks.addChild(still);
         drinks.addChild(sparkling);
         list.add(drinks);
 
-        SpinnerItemHeader food = new SpinnerItemHeader("Food");
-        food.addChild(new SpinnerItemElement("cheese"));
-        food.addChild(new SpinnerItemElement("bread"));
-        food.addChild(new SpinnerItemElement("ham"));
+        SpinnerItemHeader food = new SpinnerItemHeader("id3","Food");
+        food.addChild(new SpinnerItemElement("id3_1","cheese"));
+        food.addChild(new SpinnerItemElement("id3_2","bread"));
+        food.addChild(new SpinnerItemElement("id3_3","ham"));
         list.add(food);
 
         return list;

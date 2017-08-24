@@ -9,15 +9,17 @@ import java.util.List;
 public class CategoryNode {
 
     public int level;
+    public CategoryNode parent;
 
-    public CategoryNode(int level, int index, String id, String name, int childrenCount) {
+    public CategoryNode(CategoryNode parent, int level, int index, String id, String name, int childrenCount) {
+        this.parent = parent;
         this.level = level;
         this.index = index;
         this.id = id;
         this.name = name;
         this.childrenCount = childrenCount;
 
-        if(level==0){
+        if (level == 0) {
             visible = true;
         }
     }
@@ -32,6 +34,8 @@ public class CategoryNode {
     public int childrenCount;
     public int checkedChildrenCount;
 
-    //private List<CategoryNode> subcategories;
+    public boolean hasChildren() {
+        return childrenCount > 0;
+    }
 
 }

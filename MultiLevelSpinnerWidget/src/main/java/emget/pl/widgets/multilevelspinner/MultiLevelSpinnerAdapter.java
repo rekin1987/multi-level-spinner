@@ -3,7 +3,6 @@ package emget.pl.widgets.multilevelspinner;
 import android.content.Context;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,41 +21,32 @@ import emget.pl.widgets.multilevelspinner.model.SpinnerItemHeader;
 
 public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
-    //private List<SpinnerItem> mItems;
-    private List<CategoryNode> allItems; // shallow list
+    private static final int DEFAULT_LEVEL_INDEX = 30;
+
+    private List<CategoryNode> allItems; // flat hierarchy list
     private LayoutInflater mInflater;
     private ListItemClickCallback mListItemClickCallback;
+    private int levelIntend; // allows to set custom item intend (padding) based on the item level
+    private int itemIndex; // index of item (allows to easily find desired item based on clicked item position)
 
     public MultiLevelSpinnerAdapter(@NonNull Context context, @LayoutRes int resource, List<SpinnerItem> items, ListItemClickCallback callback) {
         super(context, resource);
-        allItems = convertToShallowList(items, 0, new MyInt(0));
-        // mItems = items;
+        itemIndex = 0;
+        // convert a list (which is actually a tree) into flat hierarchy - start with level and index 0
+        allItems = flatList(items, null, 0);
+        // get inflater for further usage
         mInflater = LayoutInflater.from(context);
         mListItemClickCallback = callback;
+        levelIntend = DEFAULT_LEVEL_INDEX;
     }
 
-    private class MyInt {
-        public int index;
-
-        public MyInt(int index) {
-            this.index = index;
-        }
-    }
-
-    private List<CategoryNode> convertToShallowList(List<SpinnerItem> items, int level, MyInt index) {
-        List<CategoryNode> list = new ArrayList<>();
-        for (SpinnerItem item : items) {
-            int childCount = 0;
-            if (item instanceof SpinnerItemHeader) {
-                childCount = getChildCount((SpinnerItemHeader) item);
-            }
-            list.add(new CategoryNode(level, index.index, "99", item.getText(), childCount));
-            ++index.index;
-            if (item instanceof SpinnerItemHeader) {
-                list.addAll(convertToShallowList(((SpinnerItemHeader) item).getChildren(), level + 1, index));
-            }
-        }
-        return list;
+    /**
+     * Allows to set different intend for items at higher levels.
+     *
+     * @param intendInPixels desired intend in pixels
+     */
+    public void setLevelIntend(int intendInPixels) {
+        levelIntend = intendInPixels;
     }
 
     @Override
@@ -80,47 +70,95 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         return visibleItemsCount;
     }
 
-    public View getCustomView(final int position, View convertView, ViewGroup parent) {
+    private View getCustomView(final int position, View convertView, ViewGroup parent) {
 
         View row = mInflater.inflate(R.layout.custom_spinner_item, parent, false);
 
         final CategoryNode item = getItemAtPosition(position);
+
+        /******* on click for item row ******/
 
         // on click for a whole row - fortunately this workarounds the default mechanism which closes the spinner on click
         // note that Spinner.setOnItemSelectedListener() will not work anymore
         row.findViewById(R.id.row_wrapper).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // get item based in the index not the clicked position!
                 CategoryNode node = allItems.get(item.index);
-                if (node.childrenCount > 0) { // if is category
+                // if is category with sub-items
+                if (node.hasChildren()) {
+                    // get level of the category
                     int level = node.level;
+                    boolean isHide;
+
+                    // check each next item on the list, starting from the item.index + 1
                     for (int i = item.index + 1; i < allItems.size(); ++i) {
                         CategoryNode subnode = allItems.get(i);
-                        if (level == subnode.level) {
-                            break;
-                        } else if (level + 1 == subnode.level) {
+                        // determine if we are hiding or showing items - check the first subnode, all others have the same visibility
+                        isHide = subnode.visible; // if was visible then we want to hide
 
-                            subnode.visible = !subnode.visible ;
+                        if (level == subnode.level) {
+                            // stop when we reached the item at the same level
+                            break;
+                        }
+
+                        if(isHide){
+                            // ensure elements on all levels are hidden
+                            if (level < subnode.level) {
+                                // change the visibility of item - if was visible make it gone and vice versa
+                                subnode.visible = false;
+                            }
+                        } else {
+                            // ensure only one level deeper items are affected (we don't want to expand all subcategories if there are any)
+                            if (level + 1 == subnode.level) {
+                                // change the visibility of item - if was visible make it gone and vice versa
+                                subnode.visible = true;
+                            }
                         }
                     }
+
+                    // notify to force the spinner to refresh content (expand or collapse items)
                     notifyDataSetChanged();
                 }
-
-                //mListItemClickCallback.onRowClicked(item.index);
             }
         });
 
-        int levelPadding = 30;
-        row.setPadding(item.level * levelPadding, 0, 0, 0);
+        /******* intend based on item level ******/
+
+        // padding depends on the level of the item and levelIntend (intent per level)
+        row.setPadding(item.level * levelIntend, 0, 0, 0);
+
+        /******* icon for categories ******/
 
         ImageView expandIcon = (ImageView) row.findViewById(R.id.image);
-        if (item.childrenCount > 0) {
+        if (item.hasChildren()) {
+            // draw expand icon for categories only
             expandIcon.setVisibility(View.VISIBLE);
         } else {
             expandIcon.setVisibility(View.INVISIBLE);
         }
 
-        // on click for a checkbox
+        /******* item text ******/
+
+        TextView textView = (TextView) row.findViewById(R.id.text);
+        textView.setText(item.name);
+
+        /******* checkbox selection ******/
+
+        if (item.hasChildren()) {
+            //            int selectedCount = getSelectedItemsCount((SpinnerItemHeader) item);
+            //            if (selectedCount > 0) {
+            //                int totalItems = getTopLevelChildrenCount((SpinnerItemHeader) item);
+            //                if (selectedCount == totalItems) {
+            //                    state = SpinnerItem.CheckboxState.CHECKED;
+            //                } else {
+            //                    state = SpinnerItem.CheckboxState.SEMICHECKED;
+            //                }
+            //            }
+        }
+
+        /******* on click for a checkbox ******/
+
         CheckBox checkbox = (CheckBox) row.findViewById(R.id.checkbox);
         checkbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -129,111 +167,64 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
             }
         });
 
-        TextView textView = (TextView) row.findViewById(R.id.text);
-        //ImageView expandIcon = (ImageView) row.findViewById(R.id.image);
-
-        //allItems.get(allItems.get(position).index);
-
-        textView.setText(item.name);
-
-        //        SpinnerItem.CheckboxState state = SpinnerItem.CheckboxState.UNCHECKED;
-        //        SpinnerItem item = mItems.get(position);
-        //        if (item instanceof SpinnerItemHeader) {
-        //            int selectedCount = getSelectedItemsCount((SpinnerItemHeader) item);
-        //            if (selectedCount > 0) {
-        //                int totalItems = getChildCount((SpinnerItemHeader) item);
-        //                if (selectedCount == totalItems) {
-        //                    state = SpinnerItem.CheckboxState.CHECKED;
-        //                } else {
-        //                    state = SpinnerItem.CheckboxState.SEMICHECKED;
-        //                }
-        //            }
-        //
-        //            expandIcon.setVisibility(View.VISIBLE);
-        //            if (item.isExpanded()) {
-        //                expandIcon.setImageDrawable(getContext().getResources().getDrawable(android.R.drawable.arrow_down_float));
-        //            } else {
-        //                expandIcon.setImageDrawable(getContext().getResources().getDrawable(android.R.drawable.arrow_up_float));
-        //            }
-        //            row.setPadding(0, 0, 0, 0);
-        //        } else {
-        //            expandIcon.setVisibility(View.GONE);
-        //            row.setPadding(30, 0, 0, 0);
-        //        }
-        //
-        //        if (state == SpinnerItem.CheckboxState.CHECKED) {
-        //            checkbox.setChecked(true);
-        //        } else if (state == SpinnerItem.CheckboxState.SEMICHECKED) {
-        //            checkbox.setBackgroundColor(getContext().getResources().getColor(android.R.color.holo_blue_bright));
-        //        } else {
-        //            checkbox.setChecked(false);
-        //        }
-
-        //textView.setText(item.name);
-
+        // finally return the prepared View (a row in the spinner)
         return row;
     }
 
+    /**
+     * Converts the tree-like list with {@link SpinnerItem} elements into flat hierarchy list of {@link CategoryNode} items.
+     *
+     * @param items a tree-like list with {@link SpinnerItem} elements to convert
+     * @param level a hierarchy level of items (initially should be 0, then recursively it is incremented for {@link SpinnerItemHeader} elements)
+     * @return Returns a flat list of {@link CategoryNode} items.
+     */
+    private List<CategoryNode> flatList(List<SpinnerItem> items, CategoryNode parent, int level) {
+        List<CategoryNode> list = new ArrayList<>();
+        for (SpinnerItem item : items) {
+            int childCount = 0;
+            if (item instanceof SpinnerItemHeader) {
+                childCount = getTopLevelChildrenCount((SpinnerItemHeader) item);
+            }
+            CategoryNode createdNode = new CategoryNode(parent, level, itemIndex, item.getId(), item.getText(), childCount);
+            list.add(createdNode);
+            ++itemIndex;
+            if (item instanceof SpinnerItemHeader) {
+                list.addAll(flatList(((SpinnerItemHeader) item).getChildren(), createdNode, level + 1));
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Calculate the corresponding item index for the clicked item on the Spinner dropdown list.
+     *
+     * @param position position of the clicked item on the Spinner dropdown list
+     * @return Returns a corresponding CategoryNode object.
+     */
     private CategoryNode getItemAtPosition(int position) {
         if (position == 0) {
+            // this is always true, item 0 is always level 0 category
             return allItems.get(0);
         }
+        // first get list of visible items
         List<CategoryNode> visibleItems = new ArrayList<>();
         for (CategoryNode node : allItems) {
             if (node.visible) {
                 visibleItems.add(node);
             }
         }
+        // on the visible items list just find the item at position - it was the one clicked
         return visibleItems.get(position);
-
-        //        int calculatedPosition = position;
-        //        for (int i=position;i<allItems.size();++i) {
-        //            if (!allItems.get(i).visible) {
-        //                ++calculatedPosition;
-        //            } else {
-        //                break;
-        //            }
-        //        }
-        //        return allItems.get(calculatedPosition);
     }
 
-    private int getChildCount(SpinnerItemHeader header) {
-        int count = 0;
-        for (SpinnerItem item : header.getChildren()) {
-            if (item instanceof SpinnerItemHeader) {
-                count += getChildCount((SpinnerItemHeader) item);
-            } else {
-                ++count;
-            }
-        }
-        return count;
-    }
-
-    private int getSelectedItemsCount(SpinnerItemHeader header) {
-        int count = 0;
-        for (SpinnerItem item : header.getChildren()) {
-            if (item.getState() == SpinnerItem.CheckboxState.CHECKED) {
-                if (item instanceof SpinnerItemHeader) {
-                    count += ((SpinnerItemHeader) item).getChildren().size();
-                } else {
-                    ++count;
-                }
-            } else if (item.getState() == SpinnerItem.CheckboxState.SEMICHECKED) {
-                ++count;
-                count += getSelectedItemsCount((SpinnerItemHeader) item);
-            }
-        }
-        return count;
-    }
-
-    private int getExpandedItemsCount() {
-        int count = 0;
-        for (CategoryNode item : allItems) {
-            if (item.expanded || item.level == 0) {
-                ++count;
-            }
-        }
-        return count;
+    /**
+     * Counts only top level children. No need to go any deeper.
+     *
+     * @param header a {@link SpinnerItemHeader} to check
+     * @return Returns count of top level children for the given {@link SpinnerItemHeader} element. Can be 0.
+     */
+    private int getTopLevelChildrenCount(SpinnerItemHeader header) {
+        return header.getChildren().size();
     }
 
 }

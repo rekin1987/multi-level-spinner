@@ -6,29 +6,15 @@ import java.util.List;
 
 public class SpinnerItemHeader extends SpinnerItem {
 
-    private int mLevel;
     private List<SpinnerItem> mChildren;
 
-    public SpinnerItemHeader(String text) {
-        this(0, text, null);
+    public SpinnerItemHeader(String id, String text) {
+        this(id, text, new ArrayList<SpinnerItem>());
     }
 
-    public SpinnerItemHeader(int level, String text) {
-        this(level, text, null);
-    }
-
-    public SpinnerItemHeader(int level, String text, List<SpinnerItem> children) {
-        super(text);
-        mLevel = level;
+    public SpinnerItemHeader(String id, String text, List<SpinnerItem> children) {
+        super(id, text);
         mChildren = children;
-    }
-
-    public int getLevel() {
-        return mLevel;
-    }
-
-    public void setLevel(int mHeaderLevel) {
-        this.mLevel = mHeaderLevel;
     }
 
     public List<SpinnerItem> getChildren() {
@@ -51,19 +37,6 @@ public class SpinnerItemHeader extends SpinnerItem {
             mChildren = new ArrayList<>();
         }
         mChildren.addAll(Arrays.asList(items));
-    }
-
-    @Override
-    public boolean isExpanded() {
-        return expanded;
-    }
-
-    @Override
-    public void setExpanded(boolean mExpanded) {
-        this.expanded = mExpanded;
-        for (SpinnerItem item : mChildren) {
-            item.setExpanded(true);
-        }
     }
 
 }
