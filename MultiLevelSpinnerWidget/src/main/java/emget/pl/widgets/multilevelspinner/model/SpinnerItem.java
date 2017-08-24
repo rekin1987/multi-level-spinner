@@ -9,36 +9,37 @@ public abstract class SpinnerItem {
         CHECKED
     }
 
-    protected String mText;
-    protected CheckboxState mState;
-    protected boolean mExpanded;
+    protected String text;
+    protected CheckboxState state;
+    protected boolean expanded;
+    private int level;
+    private String id;
 
     public SpinnerItem(String text){
-        mText = text;
+        this.text = text;
     }
 
     public CheckboxState getState() {
-        return mState;
+        return state;
     }
 
     public void setState(CheckboxState mState) {
-        this.mState = mState;
+        this.state = mState;
     }
 
-
     public String getText() {
-        return mText;
+        return this.text;
     }
 
     public void setText(String mText) {
-        this.mText = mText;
+        this.text = mText;
     }
 
     public boolean isExpanded() {
-        return mExpanded;
+        return expanded;
     }
 
     public void setExpanded(boolean mExpanded) {
-        this.mExpanded = mExpanded;
+        this.expanded = mExpanded;
     }
 }

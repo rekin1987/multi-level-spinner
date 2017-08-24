@@ -8,7 +8,6 @@ public class MultiLevelSpinner extends android.support.v7.widget.AppCompatSpinne
         super(context);
     }
 
-
     public MultiLevelSpinner(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
@@ -16,7 +15,5 @@ public class MultiLevelSpinner extends android.support.v7.widget.AppCompatSpinne
     public MultiLevelSpinner(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
     }
-
-
 
 }

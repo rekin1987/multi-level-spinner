@@ -1,7 +1,8 @@
 package emget.pl.widgets.multilevelspinner;
 
-
 public interface ListItemClickCallback {
 
-    void onItemClicked(int position);
+    void onRowClicked(int position);
+
+    void onCheckboxClicked(int position, boolean checked);
 }

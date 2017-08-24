@@ -1,6 +1,5 @@
 package emget.pl.widgets.multilevelspinner.model;
 
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -52,6 +51,19 @@ public class SpinnerItemHeader extends SpinnerItem {
             mChildren = new ArrayList<>();
         }
         mChildren.addAll(Arrays.asList(items));
+    }
+
+    @Override
+    public boolean isExpanded() {
+        return expanded;
+    }
+
+    @Override
+    public void setExpanded(boolean mExpanded) {
+        this.expanded = mExpanded;
+        for (SpinnerItem item : mChildren) {
+            item.setExpanded(true);
+        }
     }
 
 }
