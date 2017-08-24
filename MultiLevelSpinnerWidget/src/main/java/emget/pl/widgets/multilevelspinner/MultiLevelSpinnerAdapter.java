@@ -25,18 +25,16 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
     private List<CategoryNode> allItems; // flat hierarchy list
     private LayoutInflater mInflater;
-    private ListItemClickCallback mListItemClickCallback;
     private int levelIntend; // allows to set custom item intend (padding) based on the item level
     private int itemIndex; // index of item (allows to easily find desired item based on clicked item position)
 
-    public MultiLevelSpinnerAdapter(@NonNull Context context, @LayoutRes int resource, List<SpinnerItem> items, ListItemClickCallback callback) {
+    public MultiLevelSpinnerAdapter(@NonNull Context context, @LayoutRes int resource, List<SpinnerItem> items) {
         super(context, resource);
         itemIndex = 0;
         // convert a list (which is actually a tree) into flat hierarchy - start with level and index 0
-        allItems = flatList(items, null, 0);
+        allItems = flatList(items, 0);
         // get inflater for further usage
         mInflater = LayoutInflater.from(context);
-        mListItemClickCallback = callback;
         levelIntend = DEFAULT_LEVEL_INDEX;
     }
 
@@ -47,6 +45,21 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
      */
     public void setLevelIntend(int intendInPixels) {
         levelIntend = intendInPixels;
+    }
+
+    /**
+     * Get all checked items.
+     *
+     * @return Return a list of checked items.
+     */
+    public List<CategoryNode> getCheckedItems() {
+        List<CategoryNode> checkedItems = new ArrayList<>();
+        for (CategoryNode node : allItems) {
+            if (node.checkboxState == SpinnerItem.CheckboxState.CHECKED) {
+                checkedItems.add(node);
+            }
+        }
+        return checkedItems;
     }
 
     @Override
@@ -102,7 +115,7 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
                             break;
                         }
 
-                        if(isHide){
+                        if (isHide) {
                             // ensure elements on all levels are hidden
                             if (level < subnode.level) {
                                 // change the visibility of item - if was visible make it gone and vice versa
@@ -145,25 +158,48 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
         /******* checkbox selection ******/
 
+        CheckBox checkbox = (CheckBox) row.findViewById(R.id.checkbox);
+
         if (item.hasChildren()) {
-            //            int selectedCount = getSelectedItemsCount((SpinnerItemHeader) item);
-            //            if (selectedCount > 0) {
-            //                int totalItems = getTopLevelChildrenCount((SpinnerItemHeader) item);
-            //                if (selectedCount == totalItems) {
-            //                    state = SpinnerItem.CheckboxState.CHECKED;
-            //                } else {
-            //                    state = SpinnerItem.CheckboxState.SEMICHECKED;
-            //                }
-            //            }
+            List<CategoryNode> allChildren = getAllChildren(item);
+            int checkedChildrenCount = 0;
+            for (CategoryNode child : allChildren) {
+                if (child.getCheckboxState() == SpinnerItem.CheckboxState.CHECKED) {
+                    ++checkedChildrenCount;
+                }
+            }
+            if (allChildren.size() == checkedChildrenCount) {
+                item.setCheckboxState(SpinnerItem.CheckboxState.CHECKED);
+            } else if (checkedChildrenCount > 0) {
+                item.setCheckboxState(SpinnerItem.CheckboxState.SEMICHECKED);
+            } else {
+                item.setCheckboxState(SpinnerItem.CheckboxState.UNCHECKED);
+            }
+        }
+
+        if (item.getCheckboxState() == SpinnerItem.CheckboxState.CHECKED) {
+            checkbox.setChecked(true);
+        } else if (item.getCheckboxState() == SpinnerItem.CheckboxState.SEMICHECKED) {
+            checkbox.setChecked(false);
+            checkbox.setBackgroundColor(getContext().getResources().getColor(android.R.color.holo_green_dark));
+        } else {
+            checkbox.setChecked(false);
         }
 
         /******* on click for a checkbox ******/
 
-        CheckBox checkbox = (CheckBox) row.findViewById(R.id.checkbox);
         checkbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mListItemClickCallback.onCheckboxClicked(item.index, isChecked);
+                item.setCheckboxState(isChecked ? SpinnerItem.CheckboxState.CHECKED : SpinnerItem.CheckboxState.UNCHECKED);
+                if (item.hasChildren()) {
+                    // check all children
+                    List<CategoryNode> allChildren = getAllChildren(item);
+                    for (CategoryNode child : allChildren) {
+                        child.setCheckboxState(isChecked ? SpinnerItem.CheckboxState.CHECKED : SpinnerItem.CheckboxState.UNCHECKED);
+                    }
+                }
+                notifyDataSetChanged();
             }
         });
 
@@ -178,18 +214,18 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
      * @param level a hierarchy level of items (initially should be 0, then recursively it is incremented for {@link SpinnerItemHeader} elements)
      * @return Returns a flat list of {@link CategoryNode} items.
      */
-    private List<CategoryNode> flatList(List<SpinnerItem> items, CategoryNode parent, int level) {
+    private List<CategoryNode> flatList(List<SpinnerItem> items, int level) {
         List<CategoryNode> list = new ArrayList<>();
         for (SpinnerItem item : items) {
             int childCount = 0;
             if (item instanceof SpinnerItemHeader) {
                 childCount = getTopLevelChildrenCount((SpinnerItemHeader) item);
             }
-            CategoryNode createdNode = new CategoryNode(parent, level, itemIndex, item.getId(), item.getText(), childCount);
+            CategoryNode createdNode = new CategoryNode(level, itemIndex, item.getId(), item.getText(), childCount);
             list.add(createdNode);
             ++itemIndex;
             if (item instanceof SpinnerItemHeader) {
-                list.addAll(flatList(((SpinnerItemHeader) item).getChildren(), createdNode, level + 1));
+                list.addAll(flatList(((SpinnerItemHeader) item).getChildren(), level + 1));
             }
         }
         return list;
@@ -225,6 +261,27 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
      */
     private int getTopLevelChildrenCount(SpinnerItemHeader header) {
         return header.getChildren().size();
+    }
+
+    /**
+     * Gets list of children on all sub-levels.
+     *
+     * @param node a {@link CategoryNode} to go through
+     * @return Returns all level children for the given {@link CategoryNode} element. Can be empty list.
+     */
+    private List<CategoryNode> getAllChildren(CategoryNode node) {
+        List<CategoryNode> children = new ArrayList<>();
+        if (node.hasChildren()) {
+            for (int i = node.index + 1; i < allItems.size(); ++i) {
+                CategoryNode subnode = allItems.get(i);
+                if (node.level >= subnode.level) {
+                    // stop when we reached the item at the same or higher level
+                    break;
+                }
+                children.add(subnode);
+            }
+        }
+        return children;
     }
 
 }

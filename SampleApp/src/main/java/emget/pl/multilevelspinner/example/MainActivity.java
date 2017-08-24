@@ -2,15 +2,11 @@ package emget.pl.multilevelspinner.example;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import emget.pl.multilevelspinner.R;
-import emget.pl.widgets.multilevelspinner.ListItemClickCallback;
 import emget.pl.widgets.multilevelspinner.MultiLevelSpinner;
 import emget.pl.widgets.multilevelspinner.MultiLevelSpinnerAdapter;
 import emget.pl.widgets.multilevelspinner.model.SpinnerItem;
@@ -30,21 +26,10 @@ public class MainActivity extends AppCompatActivity {
         mItems = prepareList();
 
         MultiLevelSpinner spinner = (MultiLevelSpinner) findViewById(R.id.spinner);
-        mAdapter = new MultiLevelSpinnerAdapter(this, R.layout.custom_spinner_item, mItems, new ListItemClickCallback() {
-
-            @Override
-            public void onRowClicked(int position) {
-            }
-
-            @Override
-            public void onCheckboxClicked(int position, boolean checked) {
-
-            }
-        });
+        mAdapter = new MultiLevelSpinnerAdapter(this, R.layout.custom_spinner_item, mItems);
 
         spinner.setAdapter(mAdapter);
     }
-
 
     private List<SpinnerItem> prepareList(){
         List<SpinnerItem> list = new ArrayList<>();
