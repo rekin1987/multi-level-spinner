@@ -10,28 +10,44 @@ import emget.pl.widgets.multilevelspinner.CheckboxState;
 import emget.pl.widgets.multilevelspinner.SpinnerItem;
 import emget.pl.widgets.multilevelspinner.SpinnerItemHeader;
 
+/**
+ * Helper class which prints out the checked and semichecked items.
+ */
 public class CheckedItemsPrinter {
 
     private static final String TAG = CheckedItemsPrinter.class.getSimpleName();
 
-    List<String> checkedItems;
-    List<String> semiCheckedItems;
-    List<SpinnerItem> inputItems;
+    private List<String> checkedItems;
+    private List<String> semiCheckedItems;
+    private List<SpinnerItem> inputItems;
 
+    /**
+     * Constructor.
+     *
+     * @param inputItems input list of {@link SpinnerItem} items
+     */
     CheckedItemsPrinter(List<SpinnerItem> inputItems) {
         checkedItems = new ArrayList<>();
         semiCheckedItems = new ArrayList<>();
         this.inputItems = inputItems;
     }
 
+    /**
+     * Prints prints out the checked and semichecked items to the LogCat.
+     */
     public void printToConsole() {
         checkedItems.clear();
         semiCheckedItems.clear();
         countCheckedAndSemiCheckedItems(inputItems);
-        Log.d(TAG, "Checked = " + checkedItems.size() + " : " +  Arrays.toString(checkedItems.toArray()));
-        Log.d(TAG, "Semichecked = " + semiCheckedItems.size() + " : " +  Arrays.toString(semiCheckedItems.toArray()));
+        Log.d(TAG, "Checked = " + checkedItems.size() + " : " + Arrays.toString(checkedItems.toArray()));
+        Log.d(TAG, "Semichecked = " + semiCheckedItems.size() + " : " + Arrays.toString(semiCheckedItems.toArray()));
     }
 
+    /**
+     * Goes through the items looking for checked and semichecked items.
+     *
+     * @param items input list of {@link SpinnerItem} items
+     */
     private void countCheckedAndSemiCheckedItems(List<SpinnerItem> items) {
         for (SpinnerItem item : items) {
             if (item.getState() == CheckboxState.CHECKED) {
@@ -39,6 +55,7 @@ public class CheckedItemsPrinter {
             } else if (item.getState() == CheckboxState.SEMICHECKED) {
                 semiCheckedItems.add(item.getText());
             }
+            // go inside recursively if any item has children
             if (item instanceof SpinnerItemHeader) {
                 countCheckedAndSemiCheckedItems(((SpinnerItemHeader) item).getChildren());
             }
