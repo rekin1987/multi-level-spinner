@@ -2,16 +2,19 @@ package emget.pl.multilevelspinner.example;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.View;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import emget.pl.multilevelspinner.R;
+import emget.pl.widgets.multilevelspinner.CheckboxState;
 import emget.pl.widgets.multilevelspinner.MultiLevelSpinner;
 import emget.pl.widgets.multilevelspinner.MultiLevelSpinnerAdapter;
-import emget.pl.widgets.multilevelspinner.model.SpinnerItem;
-import emget.pl.widgets.multilevelspinner.model.SpinnerItemElement;
-import emget.pl.widgets.multilevelspinner.model.SpinnerItemHeader;
+import emget.pl.widgets.multilevelspinner.SpinnerItem;
+import emget.pl.widgets.multilevelspinner.SpinnerItemElement;
+import emget.pl.widgets.multilevelspinner.SpinnerItemHeader;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -56,5 +59,11 @@ public class MainActivity extends AppCompatActivity {
 
         return list;
     }
+
+    public void getSelectedItems(View view) {
+        new CheckedItemsPrinter((mItems)).printToConsole();
+
+    }
+
 
 }

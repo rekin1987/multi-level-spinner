@@ -1,4 +1,4 @@
-package emget.pl.widgets.multilevelspinner.model;
+package emget.pl.widgets.multilevelspinner;
 
 /**
  * Created by psuszek on 2017-08-24.
@@ -11,7 +11,7 @@ public class CategoryNode {
     public String id;
     public String name;
     public boolean visible;
-    public SpinnerItem.CheckboxState checkboxState;
+    public CheckboxState checkboxState;
     public int childrenCount;
 
     public CategoryNode(int level, int index, String id, String name, int childrenCount) {
@@ -25,18 +25,18 @@ public class CategoryNode {
             visible = true;
         }
 
-        checkboxState = SpinnerItem.CheckboxState.UNCHECKED;
+        checkboxState = CheckboxState.UNCHECKED;
     }
 
     public boolean hasChildren() {
         return childrenCount > 0;
     }
 
-    public SpinnerItem.CheckboxState getCheckboxState() {
+    public CheckboxState getCheckboxState() {
         return checkboxState;
     }
 
-    public void setCheckboxState(SpinnerItem.CheckboxState checkboxState) {
+    public void setCheckboxState(CheckboxState checkboxState) {
         this.checkboxState = checkboxState;
     }
 

@@ -3,6 +3,7 @@ package emget.pl.widgets.multilevelspinner;
 import android.content.Context;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
+import android.support.v7.widget.AppCompatSpinner;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,14 +16,11 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-import emget.pl.widgets.multilevelspinner.model.CategoryNode;
-import emget.pl.widgets.multilevelspinner.model.SpinnerItem;
-import emget.pl.widgets.multilevelspinner.model.SpinnerItemHeader;
-
 public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
     private static final int DEFAULT_LEVEL_INDEX = 30;
 
+    private List<SpinnerItem> inputItems;
     private List<CategoryNode> allItems; // flat hierarchy list
     private LayoutInflater mInflater;
     private int levelIntend; // allows to set custom item intend (padding) based on the item level
@@ -38,7 +36,19 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         // get inflater for further usage
         mInflater = LayoutInflater.from(context);
         levelIntend = DEFAULT_LEVEL_INDEX;
+        inputItems = items;
         this.spinner = parent;
+        this.spinner.setSpinnerEventsListener(new OnSpinnerEventsListener() {
+            @Override
+            public void onSpinnerOpened(AppCompatSpinner spinner) {
+                // NO-OP
+            }
+
+            @Override
+            public void onSpinnerClosed(AppCompatSpinner spinner) {
+                validateCheckedItems();
+            }
+        });
     }
 
     /**
@@ -50,19 +60,10 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         levelIntend = intendInPixels;
     }
 
-    /**
-     * Get all checked items.
-     *
-     * @return Return a list of checked items.
-     */
-    public List<CategoryNode> getCheckedItems() {
-        List<CategoryNode> checkedItems = new ArrayList<>();
+    void validateCheckedItems() {
         for (CategoryNode node : allItems) {
-            if (node.checkboxState == SpinnerItem.CheckboxState.CHECKED) {
-                checkedItems.add(node);
-            }
+            propagateCheckboxState(inputItems, node.id, node.checkboxState);
         }
-        return checkedItems;
     }
 
     @Override
@@ -130,9 +131,9 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
         // draw the checkbox selection based on the state: checked/unchecked/semichecked
         CheckBox checkbox = (CheckBox) row.findViewById(R.id.checkbox);
-        if (item.getCheckboxState() == SpinnerItem.CheckboxState.CHECKED) {
+        if (item.getCheckboxState() == CheckboxState.CHECKED) {
             checkbox.setChecked(true);
-        } else if (item.getCheckboxState() == SpinnerItem.CheckboxState.SEMICHECKED) {
+        } else if (item.getCheckboxState() == CheckboxState.SEMICHECKED) {
             checkbox.setChecked(false);
             checkbox.setBackgroundColor(getContext().getResources().getColor(android.R.color.holo_green_dark));
         } else {
@@ -170,6 +171,26 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
             }
         }
         return list;
+    }
+
+    private boolean propagateCheckboxState(List<SpinnerItem> items, String id, CheckboxState state) {
+        boolean foundItem = false;
+        if(items.isEmpty()){
+            return false;
+        }
+        for (SpinnerItem item : items) {
+            if(item.getId().equals(id)){
+                item.setCheckboxState(state);
+                return true;
+            }
+            if (item instanceof SpinnerItemHeader) {
+                foundItem = propagateCheckboxState(((SpinnerItemHeader) item).getChildren(), id, state);
+                if(foundItem){
+                    break;
+                }
+            }
+        }
+        return foundItem;
     }
 
     /**
@@ -304,13 +325,13 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
     }
 
     private void handleCheckboxStateChange(CategoryNode item, boolean isChecked) {
-        item.setCheckboxState(isChecked ? SpinnerItem.CheckboxState.CHECKED : SpinnerItem.CheckboxState.UNCHECKED);
+        item.setCheckboxState(isChecked ? CheckboxState.CHECKED : CheckboxState.UNCHECKED);
         // if item has children mark them all the same as the current item - checked or unchecked
         if (item.hasChildren()) {
             // check all children
             List<CategoryNode> allChildren = getAllChildren(item);
             for (CategoryNode child : allChildren) {
-                child.setCheckboxState(isChecked ? SpinnerItem.CheckboxState.CHECKED : SpinnerItem.CheckboxState.UNCHECKED);
+                child.setCheckboxState(isChecked ? CheckboxState.CHECKED : CheckboxState.UNCHECKED);
             }
         }
         // now go up the list and see if a any parent state should change
@@ -322,18 +343,18 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
             int checkedChildrenCount = 0;
             int semiCheckedChildrenCount = 0;
             for (CategoryNode child : directChildren) {
-                if (child.getCheckboxState() == SpinnerItem.CheckboxState.CHECKED) {
+                if (child.getCheckboxState() == CheckboxState.CHECKED) {
                     ++checkedChildrenCount;
-                } else if (child.getCheckboxState() == SpinnerItem.CheckboxState.SEMICHECKED) {
+                } else if (child.getCheckboxState() == CheckboxState.SEMICHECKED) {
                     ++semiCheckedChildrenCount;
                 }
             }
             if (directChildren.size() == checkedChildrenCount) {
-                parent.setCheckboxState(SpinnerItem.CheckboxState.CHECKED);
+                parent.setCheckboxState(CheckboxState.CHECKED);
             } else if (checkedChildrenCount > 0 || semiCheckedChildrenCount > 0) {
-                parent.setCheckboxState(SpinnerItem.CheckboxState.SEMICHECKED);
+                parent.setCheckboxState(CheckboxState.SEMICHECKED);
             } else {
-                parent.setCheckboxState(SpinnerItem.CheckboxState.UNCHECKED);
+                parent.setCheckboxState(CheckboxState.UNCHECKED);
             }
             currentItem = parent;
         }

@@ -1,4 +1,4 @@
-package emget.pl.widgets.multilevelspinner.model;
+package emget.pl.widgets.multilevelspinner;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,6 +7,11 @@ import java.util.List;
 public class SpinnerItemHeader extends SpinnerItem {
 
     private List<SpinnerItem> mChildren;
+
+    public SpinnerItemHeader(String text) {
+        super(text);
+        mChildren = new ArrayList<>();
+    }
 
     public SpinnerItemHeader(String id, String text) {
         this(id, text, new ArrayList<SpinnerItem>());
