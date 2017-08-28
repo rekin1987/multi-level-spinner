@@ -20,25 +20,35 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
     private static final int DEFAULT_LEVEL_INDEX = 30;
 
-    private List<SpinnerItem> inputItems;
+    private List<SpinnerItem> inputItems; // input list
     private List<CategoryNode> allItems; // flat hierarchy list
-    private LayoutInflater mInflater;
+    private LayoutInflater inflater; // layout inflater
     private int levelIntend; // allows to set custom item intend (padding) based on the item level
     private int itemIndex; // index of item (allows to easily find desired item based on clicked item position)
 
     private MultiLevelSpinner spinner;
 
+    /**
+     * Constructor
+     *
+     * @param context  The current context.
+     * @param resource The resource ID for a layout file containing a TextView to use when
+     *                 instantiating views.
+     * @param items    initial list of items to be wrapped into this adapter
+     * @param parent   a {@link MultiLevelSpinner} associated with this adapter
+     */
     public MultiLevelSpinnerAdapter(@NonNull Context context, @LayoutRes int resource, List<SpinnerItem> items, MultiLevelSpinner parent) {
         super(context, resource);
         itemIndex = 0;
-        // convert a list (which is actually a tree) into flat hierarchy - start with level and index 0
+        // convert a list (which is actually a tree) into flat hierarchy - start with level 0 (top level items)
         allItems = flatList(items, 0);
         // get inflater for further usage
-        mInflater = LayoutInflater.from(context);
+        inflater = LayoutInflater.from(context);
+        // configurable left intend for items
         levelIntend = DEFAULT_LEVEL_INDEX;
         inputItems = items;
-        this.spinner = parent;
-        this.spinner.setSpinnerEventsListener(new OnSpinnerEventsListener() {
+        spinner = parent;
+        spinner.setSpinnerEventsListener(new OnSpinnerEventsListener() {
             @Override
             public void onSpinnerOpened(AppCompatSpinner spinner) {
                 // NO-OP
@@ -46,24 +56,19 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
             @Override
             public void onSpinnerClosed(AppCompatSpinner spinner) {
+                // we want to propagate items checkboxes state from our internal model to external
                 validateCheckedItems();
             }
         });
     }
 
     /**
-     * Allows to set different intend for items at higher levels.
+     * Allows to set different intend (left margin) for items at higher levels.
      *
      * @param intendInPixels desired intend in pixels
      */
     public void setLevelIntend(int intendInPixels) {
         levelIntend = intendInPixels;
-    }
-
-    void validateCheckedItems() {
-        for (CategoryNode node : allItems) {
-            propagateCheckboxState(inputItems, node.id, node.checkboxState);
-        }
     }
 
     @Override
@@ -87,8 +92,16 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         return visibleItemsCount;
     }
 
+    /**
+     * Gets a custom View. Used in {@link #getView(int, View, ViewGroup)} and {@link #getDropDownView(int, View, ViewGroup)}.
+     *
+     * @param position    position of the clicked item (note that in most cases it is different than index on the 'allItems' list)
+     * @param convertView
+     * @param parent
+     * @return
+     */
     private View getCustomView(final int position, View convertView, ViewGroup parent) {
-        View row = mInflater.inflate(R.layout.custom_spinner_item, parent, false);
+        View row = inflater.inflate(R.layout.custom_spinner_item, parent, false);
         // get item based on the index not the clicked position!
         final CategoryNode item = getItemAtPosition(position);
         prepareView(row, item);
@@ -96,6 +109,12 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         return row;
     }
 
+    /**
+     * Prepares a View for a particular row on the dropdown list.
+     *
+     * @param row  a view to be prepared
+     * @param item node which is used to populate the view content
+     */
     private void prepareView(final View row, final CategoryNode item) {
         // on click for a whole row - fortunately this workarounds the default mechanism which closes the spinner on click
         // note that Spinner.setOnItemSelectedListener() will not work anymore
@@ -131,9 +150,9 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
         // draw the checkbox selection based on the state: checked/unchecked/semichecked
         CheckBox checkbox = (CheckBox) row.findViewById(R.id.checkbox);
-        if (item.getCheckboxState() == CheckboxState.CHECKED) {
+        if (item.checkboxState == CheckboxState.CHECKED) {
             checkbox.setChecked(true);
-        } else if (item.getCheckboxState() == CheckboxState.SEMICHECKED) {
+        } else if (item.checkboxState == CheckboxState.SEMICHECKED) {
             checkbox.setChecked(false);
             checkbox.setBackgroundColor(getContext().getResources().getColor(android.R.color.holo_green_dark));
         } else {
@@ -163,29 +182,53 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
             if (item instanceof SpinnerItemHeader) {
                 childCount = ((SpinnerItemHeader) item).getChildren().size();
             }
+            // create an item of our internal model (flat list) based on the {@link SpinnerItem}
             CategoryNode createdNode = new CategoryNode(level, itemIndex, item.getId(), item.getText(), childCount);
             list.add(createdNode);
-            ++itemIndex;
+            ++itemIndex; // increment node index
             if (item instanceof SpinnerItemHeader) {
+                // if we encounter a node with children add all children to flat list recursively (incrementing a level of these sub-nodes)
                 list.addAll(flatList(((SpinnerItemHeader) item).getChildren(), level + 1));
             }
         }
         return list;
     }
 
+    /**
+     * Ensures the checkboxes states are propagated from the internal model to the external (from {@link CategoryNode} to {@link SpinnerItem}).
+     */
+    private void validateCheckedItems() {
+        for (CategoryNode node : allItems) {
+            // we operate on the original input list!
+            propagateCheckboxState(inputItems, node.id, node.checkboxState);
+        }
+    }
+
+    /**
+     * Ensures the checkboxes states are propagated from the internal model to the external (from {@link CategoryNode} to {@link SpinnerItem}).
+     * Method visits children on all levels recursively.
+     *
+     * @param items list with states - it will propagate to external model
+     * @param id    item ID we are looking for
+     * @param state item state which will be set for the corresponding item in the external data model
+     * @return Returns true if particular item was found, otherwise returns false.
+     */
     private boolean propagateCheckboxState(List<SpinnerItem> items, String id, CheckboxState state) {
         boolean foundItem = false;
-        if(items.isEmpty()){
+        if (items.isEmpty()) {
             return false;
         }
         for (SpinnerItem item : items) {
-            if(item.getId().equals(id)){
+            if (item.getId().equals(id)) {
+                // found match - update it's state
                 item.setCheckboxState(state);
                 return true;
             }
             if (item instanceof SpinnerItemHeader) {
+                // found header -> check it's all children recursively
                 foundItem = propagateCheckboxState(((SpinnerItemHeader) item).getChildren(), id, state);
-                if(foundItem){
+                if (foundItem) {
+                    // if match was found on children list stop the loop
                     break;
                 }
             }
@@ -194,14 +237,14 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
     }
 
     /**
-     * Calculate the corresponding item index (in the data model) for the clicked item on the Spinner dropdown list.
+     * Calculate the corresponding item index (in the internal data model) for the clicked item on the Spinner dropdown list.
      *
      * @param position position of the clicked item on the Spinner dropdown list
      * @return Returns a corresponding CategoryNode object.
      */
     private CategoryNode getItemAtPosition(int position) {
         if (position == 0) {
-            // this is always true, item 0 is always level 0 category and always visible
+            // this is always true, item 0 is always level 0 category and always visible (may not be visible for user, but has 'visible = true'
             return allItems.get(0);
         }
         // first get list of visible items
@@ -237,7 +280,8 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
     }
 
     /**
-     * Gets list of children on direct sub-level.
+     * Gets list of children on direct sub-level only.
+     * Introduces better performance than {@link #getAllChildren(CategoryNode)}. Use when you need direct children for the given node.
      *
      * @param parent a {@link CategoryNode} to go through
      * @return Returns direct children for the given {@link CategoryNode} element. Can be empty list.
@@ -245,11 +289,11 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
     private List<CategoryNode> getDirectChildren(CategoryNode parent) {
         List<CategoryNode> children = new ArrayList<>();
         if (parent.hasChildren()) {
-            int expectedChildrenLevel = parent.level + 1;
+            int expectedChildrenLevel = parent.level + 1; // children have one level greater than parent
             for (int i = parent.index + 1; i < allItems.size(); ++i) {
                 CategoryNode subnode = allItems.get(i);
                 if (subnode.level > expectedChildrenLevel) {
-                    // continue when we reach the next level item
+                    // continue when we reach the next level item (this is indirect children - child of direct child - and we don't want them)
                     continue;
                 } else if (subnode.level <= parent.level) {
                     // break when we reach next item at the same level as parent or higher in the tree
@@ -271,6 +315,7 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         if (item.level == 0) {
             return null;
         }
+        // iterate starting from the item before current - order descending until node with the lower level is reached (means a parent)
         for (int i = item.index - 1; i >= 0; --i) {
             if (allItems.get(i).level < item.level) {
                 return allItems.get(i);
@@ -324,41 +369,59 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         }
     }
 
+    /**
+     * Handles changing checkboxes state. Takes children and parent nodes into consideration.
+     * @param item an item which checkbox state changes
+     * @param isChecked true if checkbox is checked, otherwise false
+     */
     private void handleCheckboxStateChange(CategoryNode item, boolean isChecked) {
-        item.setCheckboxState(isChecked ? CheckboxState.CHECKED : CheckboxState.UNCHECKED);
+        // first set the state for the given item itself
+        item.checkboxState = isChecked ? CheckboxState.CHECKED : CheckboxState.UNCHECKED;
+
         // if item has children mark them all the same as the current item - checked or unchecked
         if (item.hasChildren()) {
             // check all children
             List<CategoryNode> allChildren = getAllChildren(item);
             for (CategoryNode child : allChildren) {
-                child.setCheckboxState(isChecked ? CheckboxState.CHECKED : CheckboxState.UNCHECKED);
+                child.checkboxState = isChecked ? CheckboxState.CHECKED : CheckboxState.UNCHECKED;
             }
         }
+
         // now go up the list and see if a any parent state should change
+        // consider the following scenarios:
+        // - when any item below parent (direct or indirect child) is checked then parents (up to the top level) are semichecked
+        // - when all items below parent (direct or indirect child) are checked then parent is checked but the parent-parent may be only semichecked
         CategoryNode parent;
         CategoryNode currentItem = item;
+
+        // find parent for subsequent levels until top level parent is found
+        // important to note: this works recursively from bottom to the top, so the state is set for the lowest levels first
         while ((parent = findParent(currentItem)) != null) {
-            // find parent for subsequent levels until top level parent is found
+            // get direct parent
             List<CategoryNode> directChildren = getDirectChildren(parent);
+            // calculate checked and semichecked children
             int checkedChildrenCount = 0;
             int semiCheckedChildrenCount = 0;
             for (CategoryNode child : directChildren) {
-                if (child.getCheckboxState() == CheckboxState.CHECKED) {
+                if (child.checkboxState == CheckboxState.CHECKED) {
                     ++checkedChildrenCount;
-                } else if (child.getCheckboxState() == CheckboxState.SEMICHECKED) {
+                } else if (child.checkboxState == CheckboxState.SEMICHECKED) {
                     ++semiCheckedChildrenCount;
                 }
             }
+            // set the actual state based on the number of checked and semichecked children
             if (directChildren.size() == checkedChildrenCount) {
-                parent.setCheckboxState(CheckboxState.CHECKED);
+                parent.checkboxState = CheckboxState.CHECKED;
             } else if (checkedChildrenCount > 0 || semiCheckedChildrenCount > 0) {
-                parent.setCheckboxState(CheckboxState.SEMICHECKED);
+                parent.checkboxState = CheckboxState.SEMICHECKED;
             } else {
-                parent.setCheckboxState(CheckboxState.UNCHECKED);
+                parent.checkboxState = CheckboxState.UNCHECKED;
             }
+            // make current item a parent, so we propagate towards the top (towards the level 0 node)
             currentItem = parent;
         }
 
+        // notify to force the spinner to refresh content (show proper checked/semichecked/unchecked states for children and parents of this node)
         notifyDataSetChanged();
     }
 

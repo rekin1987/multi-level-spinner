@@ -1,8 +1,7 @@
 package emget.pl.widgets.multilevelspinner;
 
 /**
- * An interface which a client of this Spinner could use to receive
- * open/closed events for this Spinner.
+ * An interface which a client of this MultiLevelSpinner could use to receive open/closed events for the MultiLevelSpinner.
  */
 interface OnSpinnerEventsListener {
 
