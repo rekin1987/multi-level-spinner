@@ -75,6 +75,7 @@ public class MultiLevelSpinner extends android.support.v7.widget.AppCompatSpinne
         if (adapter instanceof MultiLevelSpinnerAdapter) {
             ((MultiLevelSpinnerAdapter) adapter).setParentSpinner(this);
         }
+        setSelection(getAdapter().getCount()-1);
     }
 
     /**
