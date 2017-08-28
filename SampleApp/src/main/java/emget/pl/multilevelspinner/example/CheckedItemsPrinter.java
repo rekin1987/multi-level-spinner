@@ -1,6 +1,7 @@
 package emget.pl.multilevelspinner.example;
 
 import android.util.Log;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,7 +20,6 @@ public class CheckedItemsPrinter {
 
     private List<String> checkedItems;
     private List<String> semiCheckedItems;
-    private List<SpinnerItem> inputItems;
 
     /**
      * Constructor.
@@ -29,16 +29,15 @@ public class CheckedItemsPrinter {
     CheckedItemsPrinter(List<SpinnerItem> inputItems) {
         checkedItems = new ArrayList<>();
         semiCheckedItems = new ArrayList<>();
-        this.inputItems = inputItems;
+        countCheckedAndSemiCheckedItems(inputItems);
     }
 
     /**
-     * Prints prints out the checked and semichecked items to the LogCat.
+     * Prints out the checked and semichecked items to the LogCat.
      */
     public void printToConsole() {
         checkedItems.clear();
         semiCheckedItems.clear();
-        countCheckedAndSemiCheckedItems(inputItems);
         Log.d(TAG, "Checked = " + checkedItems.size() + " : " + Arrays.toString(checkedItems.toArray()));
         Log.d(TAG, "Semichecked = " + semiCheckedItems.size() + " : " + Arrays.toString(semiCheckedItems.toArray()));
     }
@@ -62,4 +61,10 @@ public class CheckedItemsPrinter {
         }
     }
 
+    /**
+     * Prints out the checked and semichecked items to the provided TextView.
+     */
+    public void printToTextView(TextView view) {
+        view.setText("Checked = " + checkedItems.size() + " : " + Arrays.toString(checkedItems.toArray()) + "\nSemichecked = " + semiCheckedItems.size() + " : " + Arrays.toString(semiCheckedItems.toArray()));
+    }
 }

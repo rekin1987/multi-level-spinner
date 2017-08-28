@@ -3,6 +3,7 @@ package emget.pl.multilevelspinner.example;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,7 +78,9 @@ public class MainActivity extends AppCompatActivity {
      */
     public void printCheckedItems(View view) {
         // create a CheckedItemsPrinter and print checked and semichecked items to console
-        new CheckedItemsPrinter((mItems)).printToConsole();
+        CheckedItemsPrinter printer = new CheckedItemsPrinter(mItems);
+        printer.printToConsole();
+        printer.printToTextView((TextView)findViewById(R.id.selected_items_label));
 
     }
 
