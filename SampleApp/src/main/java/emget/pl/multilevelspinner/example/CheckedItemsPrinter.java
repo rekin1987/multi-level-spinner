@@ -36,8 +36,6 @@ public class CheckedItemsPrinter {
      * Prints out the checked and semichecked items to the LogCat.
      */
     public void printToConsole() {
-        checkedItems.clear();
-        semiCheckedItems.clear();
         Log.d(TAG, "Checked = " + checkedItems.size() + " : " + Arrays.toString(checkedItems.toArray()));
         Log.d(TAG, "Semichecked = " + semiCheckedItems.size() + " : " + Arrays.toString(semiCheckedItems.toArray()));
     }
