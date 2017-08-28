@@ -1,6 +1,7 @@
 package emget.pl.widgets.multilevelspinner;
 
 import android.content.Context;
+import android.os.Handler;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.widget.ArrayAdapter;
@@ -84,6 +85,26 @@ public class MultiLevelSpinner extends RelativeLayout {
             public boolean onTouchEvent(MotionEvent event) {
                 // when clicked just perform the click on main Spinner - it will show the dropdown list on top of the overlay Spinner
                 multiLevelSpinner.performClick();
+                // we need to invert the spinners visibility - use delay for smooth transition! in example 200ms delay
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        // make overlay spinner invisible
+                        overlayTitleSpinner.setVisibility(INVISIBLE);
+                        // the main spinner visible to ensure it handles onClick events correctly
+                        multiLevelSpinner.setVisibility(VISIBLE);
+                    }
+                }, 200);
+                // we listen for closing event for the main spinner, to make sure the overlay title spinner gets on top
+                multiLevelSpinner.setOnDropdownCloseListener(new MultiLevelSpinnerImpl.OnDropdownCloseListener() {
+                    @Override
+                    public void onDropdownClosed() {
+                        // make overlay spinner visible on top of the main spinner
+                        overlayTitleSpinner.setVisibility(VISIBLE);
+                        // the main spinner is invisible
+                        multiLevelSpinner.setVisibility(INVISIBLE);
+                    }
+                });
                 // consume event, so the overlay Spinner won't show it's dropdown
                 return true;
             }
@@ -93,9 +114,9 @@ public class MultiLevelSpinner extends RelativeLayout {
         overlayTitleSpinner.setLayoutParams(spinnerParams);
         this.addView(overlayTitleSpinner);
 
-        // make overlay spinner visible on top of the main spinner
+        // at the start make overlay spinner visible on top of the main spinner
         overlayTitleSpinner.setVisibility(VISIBLE);
-        // the main spinner will only show it's dropdown - but the whole spinner will stay invisible
+        // the main spinner will change visibility when dropdown will show up - done in a separate delayed Handler
         multiLevelSpinner.setVisibility(INVISIBLE);
     }
 
@@ -112,8 +133,7 @@ public class MultiLevelSpinner extends RelativeLayout {
      * Inits layout.
      *
      * @param attrs The attributes of the XML tag that is inflating the view.
-     * @@param context The Context the view is running in, through which it can
-     * access the current theme, resources, etc.
+     * @@param context The Context the view is running in, through which it can access the current theme, resources, etc.
      */
     private void init(Context context, AttributeSet attrs) {
         multiLevelSpinner = new MultiLevelSpinnerImpl(context, attrs);

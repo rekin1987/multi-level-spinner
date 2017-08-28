@@ -8,7 +8,18 @@ import android.util.AttributeSet;
  */
 class MultiLevelSpinnerImpl extends android.support.v7.widget.AppCompatSpinner {
 
+    /**
+     * Listener used to inform that the dropdown list is closed.
+     */
+    interface OnDropdownCloseListener {
+        /**
+         * Triggered when a dropdown list is closed.
+         */
+        void onDropdownClosed();
+    }
+
     private boolean isOpened = false;
+    private OnDropdownCloseListener dropdownCloseListener;
 
     /**
      * Construct a new spinner with the given context's theme and the supplied attribute set.
@@ -32,6 +43,9 @@ class MultiLevelSpinnerImpl extends android.support.v7.widget.AppCompatSpinner {
         if (isOpened && hasFocus) {
             // this state means the dropdown list is being closed
             isOpened = false;
+            if (dropdownCloseListener != null) {
+                dropdownCloseListener.onDropdownClosed();
+            }
             // we want to refresh the input list, on which the adapter depends
             getAdapter().notifyContentNeedRefresh();
         }
@@ -40,6 +54,15 @@ class MultiLevelSpinnerImpl extends android.support.v7.widget.AppCompatSpinner {
     @Override
     public MultiLevelSpinnerAdapter getAdapter() {
         return (MultiLevelSpinnerAdapter) super.getAdapter();
+    }
+
+    /**
+     * Registers a dropdown close listener
+     *
+     * @param dropdownCloseListener a listener to register
+     */
+    public void setOnDropdownCloseListener(OnDropdownCloseListener dropdownCloseListener) {
+        this.dropdownCloseListener = dropdownCloseListener;
     }
 
 }
