@@ -28,7 +28,9 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
     private int levelIntend; // allows to set custom item intend (padding) based on the item level
     private int itemIndex; // index of item (allows to easily find desired item based on clicked item position)
 
-    public MultiLevelSpinnerAdapter(@NonNull Context context, @LayoutRes int resource, List<SpinnerItem> items) {
+    private MultiLevelSpinner spinner;
+
+    public MultiLevelSpinnerAdapter(@NonNull Context context, @LayoutRes int resource, List<SpinnerItem> items, MultiLevelSpinner parent) {
         super(context, resource);
         itemIndex = 0;
         // convert a list (which is actually a tree) into flat hierarchy - start with level and index 0
@@ -36,6 +38,7 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         // get inflater for further usage
         mInflater = LayoutInflater.from(context);
         levelIntend = DEFAULT_LEVEL_INDEX;
+        this.spinner = parent;
     }
 
     /**
@@ -96,6 +99,12 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         row.findViewById(R.id.row_wrapper).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (!spinner.isOpened()) {
+                    spinner.performClick();
+                    // ignore all the rest, we are only opening/expanding the spinner
+                    return;
+                }
+
                 // get item based in the index not the clicked position!
                 CategoryNode node = allItems.get(item.index);
                 // if is category with sub-items
