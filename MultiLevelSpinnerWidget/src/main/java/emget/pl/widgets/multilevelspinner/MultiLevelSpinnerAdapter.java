@@ -116,7 +116,6 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
      * @param item node which is used to populate the view content
      */
     private void prepareView(final View row, final CategoryNode item) {
-        // TODO add click feedback (background changing - selector would be good here)
         // on click for a whole row - fortunately this workarounds the default mechanism which closes the spinner on click
         // note that Spinner.setOnItemSelectedListener() will not work anymore
         row.findViewById(R.id.row_wrapper).setOnClickListener(new View.OnClickListener() {

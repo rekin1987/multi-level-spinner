@@ -4,6 +4,7 @@
               android:id="@+id/row_wrapper"
               android:layout_width="match_parent"
               android:layout_height="wrap_content"
+              android:background="@drawable/row_click_selector"
               android:orientation="horizontal"
     >
 
