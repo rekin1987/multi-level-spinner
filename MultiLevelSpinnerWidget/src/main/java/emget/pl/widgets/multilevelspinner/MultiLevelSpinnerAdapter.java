@@ -3,9 +3,7 @@ package emget.pl.widgets.multilevelspinner;
 import android.content.Context;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
-import android.support.v7.widget.AppCompatSpinner;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -18,15 +16,14 @@ import java.util.List;
 
 public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
-    private static final int DEFAULT_LEVEL_INDEX = 30;
+    static final int DEFAULT_LEVEL_INDEX = 30;
 
     private List<SpinnerItem> inputItemsInTreeHierarchy; // input list
     private List<CategoryNode> convertedItemsInFlatHierarchy; // flat hierarchy list
-    private LayoutInflater inflater; // layout inflater
     private int levelIntend; // allows to set custom item intend (padding) based on the item level
+    private LayoutInflater inflater; // layout inflater
 
     private SpinnerAdapterUtils adapterUtils;
-    private MultiLevelSpinner spinner;
 
     /**
      * Constructor
@@ -46,28 +43,6 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         // configurable left intend for items
         levelIntend = DEFAULT_LEVEL_INDEX;
         inputItemsInTreeHierarchy = items;
-
-//        spinner.setSpinnerEventsListener(new OnSpinnerEventsListener() {
-//            @Override
-//            public void onSpinnerOpened(AppCompatSpinner spinner) {
-//                // NO-OP
-//            }
-//
-//            @Override
-//            public void onSpinnerClosed(AppCompatSpinner spinner) {
-//                // we want to propagate items checkboxes state from our internal model to external
-//                adapterUtils.validateCheckedItems(inputItemsInTreeHierarchy, convertedItemsInFlatHierarchy);
-//            }
-//        });
-    }
-
-    /**
-     * Allows to set different intend (left margin) for items at higher levels.
-     *
-     * @param intendInPixels desired intend in pixels
-     */
-    public void setLevelIntend(int intendInPixels) {
-        levelIntend = intendInPixels;
     }
 
     @Override
@@ -92,12 +67,19 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
     }
 
     /**
-     * Associates with a {@link MultiLevelSpinner}
+     * Allows to set different intend (left margin) for items at higher levels.
      *
-     * @param parent a {@link MultiLevelSpinner} to be associated with this adapter
+     * @param intendInPixels desired intend in pixels
      */
-    void setParentSpinner(MultiLevelSpinner parent) {
-        spinner = parent;
+    void setLevelIntend(int intendInPixels) {
+        levelIntend = intendInPixels;
+    }
+
+    /**
+     * Ensures the checkboxes states are propagated from the internal model to the external (from {@link CategoryNode} to {@link SpinnerItem}).
+     */
+    void notifyContentNeedRefresh() {
+        adapterUtils.validateCheckedItems(inputItemsInTreeHierarchy, convertedItemsInFlatHierarchy);
     }
 
     /**
@@ -114,16 +96,6 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         // get item based on the index not the clicked position!
         final CategoryNode item = adapterUtils.getItemAtPosition(convertedItemsInFlatHierarchy, position);
         prepareView(row, item);
-//        if(position == 0){
-//            row.findViewById(R.id.row_wrapper).setOnTouchListener(new View.OnTouchListener() {
-//                @Override
-//                public boolean onTouch(View v, MotionEvent event) {
-//                    if (v.getParent() != null && v.getParent() instanceof MultiLevelSpinner)
-//                        ((MultiLevelSpinner) v.getParent()).performClick();
-//                    return true;
-//                }
-//            });
-//        }
         // finally return the prepared View (a row in the spinner)
         return row;
     }
@@ -140,12 +112,6 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         row.findViewById(R.id.row_wrapper).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!spinner.isOpened()) {
-                    spinner.performClick();
-                    // ignore all the rest, we are only opening/expanding the spinner
-                    return;
-                }
-
                 // change visibility status to show or hide for item's children based on the item index not the clicked position!
                 CategoryNode node = convertedItemsInFlatHierarchy.get(item.index);
                 // if is category with sub-items

@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
         MultiLevelSpinner spinner = (MultiLevelSpinner) findViewById(R.id.spinner);
         mAdapter = new MultiLevelSpinnerAdapter(this, R.layout.custom_spinner_item, mItems);
-
+        spinner.addSpinnerTitle("Custom title");
         spinner.setAdapter(mAdapter);
     }
 
