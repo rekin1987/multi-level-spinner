@@ -87,13 +87,14 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
     }
 
     private View getCustomView(final int position, View convertView, ViewGroup parent) {
-
         View row = mInflater.inflate(R.layout.custom_spinner_item, parent, false);
-
         final CategoryNode item = getItemAtPosition(position);
+        prepareView(row, item);
+        // finally return the prepared View (a row in the spinner)
+        return row;
+    }
 
-        /******* on click for item row ******/
-
+    private void prepareView(final View row, final CategoryNode item) {
         // on click for a whole row - fortunately this workarounds the default mechanism which closes the spinner on click
         // note that Spinner.setOnItemSelectedListener() will not work anymore
         row.findViewById(R.id.row_wrapper).setOnClickListener(new View.OnClickListener() {
@@ -105,53 +106,15 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
                     return;
                 }
 
-                // get item based in the index not the clicked position!
-                CategoryNode node = allItems.get(item.index);
-                // if is category with sub-items
-                if (node.hasChildren()) {
-                    // get level of the category
-                    int level = node.level;
-                    boolean isHide;
-
-                    // check each next item on the list, starting from the item.index + 1
-                    for (int i = item.index + 1; i < allItems.size(); ++i) {
-                        CategoryNode subnode = allItems.get(i);
-                        // determine if we are hiding or showing items - check the first subnode, all others have the same visibility
-                        isHide = subnode.visible; // if was visible then we want to hide
-
-                        if (level == subnode.level) {
-                            // stop when we reached the item at the same level
-                            break;
-                        }
-
-                        if (isHide) {
-                            // ensure elements on all levels are hidden
-                            if (level < subnode.level) {
-                                // change the visibility of item - if was visible make it gone and vice versa
-                                subnode.visible = false;
-                            }
-                        } else {
-                            // ensure only one level deeper items are affected (we don't want to expand all subcategories if there are any)
-                            if (level + 1 == subnode.level) {
-                                // change the visibility of item - if was visible make it gone and vice versa
-                                subnode.visible = true;
-                            }
-                        }
-                    }
-
-                    // notify to force the spinner to refresh content (expand or collapse items)
-                    notifyDataSetChanged();
-                }
+                // show or hide item's children based in the index not the clicked position!
+                hideOrShowNodeChildren(item.index);
             }
         });
-
-        /******* intend based on item level ******/
 
         // padding depends on the level of the item and levelIntend (intent per level)
         row.setPadding(item.level * levelIntend, 0, 0, 0);
 
-        /******* icon for categories ******/
-
+        // add 'expand' arrow for each item which has children
         ImageView expandIcon = (ImageView) row.findViewById(R.id.image);
         if (item.hasChildren()) {
             // draw expand icon for categories only
@@ -160,15 +123,13 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
             expandIcon.setVisibility(View.INVISIBLE);
         }
 
-        /******* item text ******/
-
+        // set item text
         TextView textView = (TextView) row.findViewById(R.id.text);
         textView.setText(item.name);
 
         /******* checkbox selection ******/
 
         CheckBox checkbox = (CheckBox) row.findViewById(R.id.checkbox);
-
         if (item.hasChildren()) {
             List<CategoryNode> allChildren = getAllChildren(item);
             int checkedChildrenCount = 0;
@@ -195,8 +156,7 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
             checkbox.setChecked(false);
         }
 
-        /******* on click for a checkbox ******/
-
+        // on click for a checkbox
         checkbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -211,9 +171,6 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
                 notifyDataSetChanged();
             }
         });
-
-        // finally return the prepared View (a row in the spinner)
-        return row;
     }
 
     /**
@@ -228,7 +185,7 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         for (SpinnerItem item : items) {
             int childCount = 0;
             if (item instanceof SpinnerItemHeader) {
-                childCount = getTopLevelChildrenCount((SpinnerItemHeader) item);
+                childCount = ((SpinnerItemHeader) item).getChildren().size();
             }
             CategoryNode createdNode = new CategoryNode(level, itemIndex, item.getId(), item.getText(), childCount);
             list.add(createdNode);
@@ -241,7 +198,7 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
     }
 
     /**
-     * Calculate the corresponding item index for the clicked item on the Spinner dropdown list.
+     * Calculate the corresponding item index (in the data model) for the clicked item on the Spinner dropdown list.
      *
      * @param position position of the clicked item on the Spinner dropdown list
      * @return Returns a corresponding CategoryNode object.
@@ -263,16 +220,6 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
     }
 
     /**
-     * Counts only top level children. No need to go any deeper.
-     *
-     * @param header a {@link SpinnerItemHeader} to check
-     * @return Returns count of top level children for the given {@link SpinnerItemHeader} element. Can be 0.
-     */
-    private int getTopLevelChildrenCount(SpinnerItemHeader header) {
-        return header.getChildren().size();
-    }
-
-    /**
      * Gets list of children on all sub-levels.
      *
      * @param node a {@link CategoryNode} to go through
@@ -291,6 +238,51 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
             }
         }
         return children;
+    }
+
+    /**
+     * Shows or hides children items for a node at the specified index when a certain position was clicked.
+     *
+     * @param nodeIndex index of the node - in most cases different from the clicked position
+     */
+    private void hideOrShowNodeChildren(int nodeIndex) {
+        // get item based in the index not the clicked position!
+        CategoryNode node = allItems.get(nodeIndex);
+        // if is category with sub-items
+        if (node.hasChildren()) {
+            // get level of the category
+            int level = node.level;
+            boolean isHide;
+
+            // check each next item on the list, starting from the item.index + 1
+            for (int i = nodeIndex + 1; i < allItems.size(); ++i) {
+                CategoryNode subnode = allItems.get(i);
+                // determine if we are hiding or showing items - check the first subnode, all others have the same visibility
+                isHide = subnode.visible; // if was visible then we want to hide
+
+                if (level == subnode.level) {
+                    // stop when we reached the item at the same level
+                    break;
+                }
+
+                if (isHide) {
+                    // ensure elements on all levels are hidden
+                    if (level < subnode.level) {
+                        // change the visibility of item - if was visible make it gone and vice versa
+                        subnode.visible = false;
+                    }
+                } else {
+                    // ensure only one level deeper items are affected (we don't want to expand all subcategories if there are any)
+                    if (level + 1 == subnode.level) {
+                        // change the visibility of item - if was visible make it gone and vice versa
+                        subnode.visible = true;
+                    }
+                }
+            }
+
+            // notify to force the spinner to refresh content (expand or collapse items)
+            notifyDataSetChanged();
+        }
     }
 
 }
