@@ -24,6 +24,7 @@ public class MultiLevelSpinner extends RelativeLayout {
     private android.support.v7.widget.AppCompatSpinner overlayTitleSpinner;
     // layout parameters for both spinners
     private RelativeLayout.LayoutParams spinnerParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+    private boolean isTitleSet;
 
     /**
      * Construct a new spinner with the given context's theme.
@@ -119,6 +120,8 @@ public class MultiLevelSpinner extends RelativeLayout {
         overlayTitleSpinner.setVisibility(VISIBLE);
         // the main spinner will change visibility when dropdown will show up - done in a separate delayed Handler
         multiLevelSpinner.setVisibility(INVISIBLE);
+
+        isTitleSet = true;
     }
 
     /**
@@ -127,13 +130,16 @@ public class MultiLevelSpinner extends RelativeLayout {
      * @param adapter {@link MultiLevelSpinnerAdapter} to set
      */
     public void setAdapter(MultiLevelSpinnerAdapter adapter) {
+        if (!isTitleSet) {
+            throw new NullPointerException("Must set title first! Use #addSpinnerTitle(String) method.");
+        }
         multiLevelSpinner.setAdapter(adapter);
     }
 
     /**
      * Inits layout.
      *
-     * @param attrs The attributes of the XML tag that is inflating the view.
+     * @param attrs   The attributes of the XML tag that is inflating the view.
      * @param context The Context the view is running in, through which it can access the current theme, resources, etc.
      */
     private void init(Context context, AttributeSet attrs) {
