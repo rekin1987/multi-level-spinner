@@ -17,20 +17,18 @@ import emget.pl.widgets.multilevelspinner.SpinnerItemHeader;
 
 public class MainActivity extends AppCompatActivity {
 
-    private List<SpinnerItem> mItems;
-    private MultiLevelSpinnerAdapter mAdapter;
+    private List<SpinnerItem> items;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mItems = prepareList();
+        items = prepareList();
 
         MultiLevelSpinner spinner = (MultiLevelSpinner) findViewById(R.id.spinner);
-        mAdapter = new MultiLevelSpinnerAdapter(this, R.layout.custom_spinner_item, mItems);
         spinner.addSpinnerTitle("Custom title");
-        spinner.setAdapter(mAdapter);
+        spinner.setAdapter(new MultiLevelSpinnerAdapter(this, R.layout.custom_spinner_item, items));
     }
 
     /**
@@ -78,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
      */
     public void printCheckedItems(View view) {
         // create a CheckedItemsPrinter and print checked and semichecked items to console
-        CheckedItemsPrinter printer = new CheckedItemsPrinter(mItems);
+        CheckedItemsPrinter printer = new CheckedItemsPrinter(items);
         printer.printToConsole();
         printer.printToTextView((TextView)findViewById(R.id.selected_items_label));
 

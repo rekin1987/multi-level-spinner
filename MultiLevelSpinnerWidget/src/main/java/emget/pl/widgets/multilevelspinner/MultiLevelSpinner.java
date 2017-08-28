@@ -18,12 +18,16 @@ public class MultiLevelSpinner extends RelativeLayout {
      * - MultiLevelSpinnerImpl which is the actual main spinner with data model and shows a dropdown list with items
      */
 
+    // allows smooth transition between both spinners
+    private static final int SMOOTH_UI_TRANSITION_DELAY = 200;
+
     // main spinner, which dropdown list is shown
-    private MultiLevelSpinnerImpl multiLevelSpinner;
+    private MultiLevelSpinnerImpl mainSpinner;
     // overlay spinner - works a a "title" when main spinner is collapsed
-    private android.support.v7.widget.AppCompatSpinner overlayTitleSpinner;
+    private android.support.v7.widget.AppCompatSpinner overlaySpinner;
     // layout parameters for both spinners
     private RelativeLayout.LayoutParams spinnerParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+    // flag determining if title was set - title is mandatory
     private boolean isTitleSet;
 
     /**
@@ -71,7 +75,7 @@ public class MultiLevelSpinner extends RelativeLayout {
      * @param intendInPixels desired intend in pixels
      */
     public void setLevelIntend(int intendInPixels) {
-        multiLevelSpinner.getAdapter().setLevelIntend(intendInPixels);
+        mainSpinner.getAdapter().setLevelIntend(intendInPixels);
     }
 
     /**
@@ -81,29 +85,29 @@ public class MultiLevelSpinner extends RelativeLayout {
      */
     public void addSpinnerTitle(String titleString) {
         // we overlay another spinner on top of the existing one - it will work as a "title"
-        overlayTitleSpinner = new android.support.v7.widget.AppCompatSpinner(getContext()) {
+        overlaySpinner = new android.support.v7.widget.AppCompatSpinner(getContext()) {
             @Override
             public boolean onTouchEvent(MotionEvent event) {
                 // when clicked just perform the click on main Spinner - it will show the dropdown list on top of the overlay Spinner
-                multiLevelSpinner.performClick();
-                // we need to invert the spinners visibility - use delay for smooth transition! in example 200ms delay
+                mainSpinner.performClick();
+                // we need to invert the spinners visibility - use delay for smooth transition! in example SMOOTH_UI_TRANSITION_DELAY delay
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         // make overlay spinner invisible
-                        overlayTitleSpinner.setVisibility(INVISIBLE);
+                        overlaySpinner.setVisibility(INVISIBLE);
                         // the main spinner visible to ensure it handles onClick events correctly
-                        multiLevelSpinner.setVisibility(VISIBLE);
+                        mainSpinner.setVisibility(VISIBLE);
                     }
-                }, 200);
+                }, SMOOTH_UI_TRANSITION_DELAY);
                 // we listen for closing event for the main spinner, to make sure the overlay title spinner gets on top
-                multiLevelSpinner.setOnDropdownCloseListener(new MultiLevelSpinnerImpl.OnDropdownCloseListener() {
+                mainSpinner.setOnDropdownCloseListener(new MultiLevelSpinnerImpl.OnDropdownCloseListener() {
                     @Override
                     public void onDropdownClosed() {
                         // make overlay spinner visible on top of the main spinner
-                        overlayTitleSpinner.setVisibility(VISIBLE);
+                        overlaySpinner.setVisibility(VISIBLE);
                         // the main spinner is invisible
-                        multiLevelSpinner.setVisibility(INVISIBLE);
+                        mainSpinner.setVisibility(INVISIBLE);
                     }
                 });
                 // consume event, so the overlay Spinner won't show it's dropdown
@@ -112,14 +116,28 @@ public class MultiLevelSpinner extends RelativeLayout {
         };
 
         // set array adapter with one item - given title string
-        overlayTitleSpinner.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, new String[]{titleString}));
-        overlayTitleSpinner.setLayoutParams(spinnerParams);
-        this.addView(overlayTitleSpinner);
+        overlaySpinner.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, new String[]{titleString}));
+
+        // update overlay spinner params to match main spinner height - use delay for smooth transition! in example SMOOTH_UI_TRANSITION_DELAY delay
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // match the height of the main spinner
+                if (mainSpinner.getHeight() > 0) {
+                    RelativeLayout.LayoutParams spinnerParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, mainSpinner.getHeight());
+                    overlaySpinner.setLayoutParams(spinnerParams);
+                }
+            }
+        }, SMOOTH_UI_TRANSITION_DELAY);
+
+        // set default params - will be updated after delay to match main spinner height
+        overlaySpinner.setLayoutParams(spinnerParams);
+        this.addView(overlaySpinner);
 
         // at the start make overlay spinner visible on top of the main spinner
-        overlayTitleSpinner.setVisibility(VISIBLE);
+        overlaySpinner.setVisibility(VISIBLE);
         // the main spinner will change visibility when dropdown will show up - done in a separate delayed Handler
-        multiLevelSpinner.setVisibility(INVISIBLE);
+        mainSpinner.setVisibility(INVISIBLE);
 
         isTitleSet = true;
     }
@@ -133,7 +151,7 @@ public class MultiLevelSpinner extends RelativeLayout {
         if (!isTitleSet) {
             throw new NullPointerException("Must set title first! Use #addSpinnerTitle(String) method.");
         }
-        multiLevelSpinner.setAdapter(adapter);
+        mainSpinner.setAdapter(adapter);
     }
 
     /**
@@ -143,8 +161,9 @@ public class MultiLevelSpinner extends RelativeLayout {
      * @param context The Context the view is running in, through which it can access the current theme, resources, etc.
      */
     private void init(Context context, AttributeSet attrs) {
-        multiLevelSpinner = new MultiLevelSpinnerImpl(context, attrs);
-        multiLevelSpinner.setLayoutParams(spinnerParams);
-        this.addView(multiLevelSpinner);
+        mainSpinner = new MultiLevelSpinnerImpl(context, attrs);
+        mainSpinner.setLayoutParams(spinnerParams);
+        this.addView(mainSpinner);
     }
+
 }
