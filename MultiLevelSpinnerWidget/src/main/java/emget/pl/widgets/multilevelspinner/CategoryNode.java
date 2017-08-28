@@ -12,6 +12,7 @@ class CategoryNode {
     int level; // node level starting from 0 (top node) ascending by 1
     int index; // node index on the list of all items (regardless of the visibility)
     boolean visible; // node visibility on the spinner dropdown list
+    boolean expanded; // valid for node with children, tells if the row is expanded and children are visible
     CheckboxState checkboxState; // checkbox state for the node
     int childrenCount; // number of children nodes (is 0 for nodes without children)
 

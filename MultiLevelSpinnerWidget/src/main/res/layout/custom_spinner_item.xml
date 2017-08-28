@@ -29,5 +29,6 @@
         android:id="@+id/image"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:srcCompat="@android:drawable/arrow_up_float"/>
+        android:src="@android:drawable/arrow_down_float"
+        />
 </LinearLayout>

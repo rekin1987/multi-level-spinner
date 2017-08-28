@@ -116,6 +116,7 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
      * @param item node which is used to populate the view content
      */
     private void prepareView(final View row, final CategoryNode item) {
+        // TODO add click feedback (background changing - selector would be good here)
         // on click for a whole row - fortunately this workarounds the default mechanism which closes the spinner on click
         // note that Spinner.setOnItemSelectedListener() will not work anymore
         row.findViewById(R.id.row_wrapper).setOnClickListener(new View.OnClickListener() {
@@ -138,8 +139,13 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         // add 'expand' arrow for each item which has children
         ImageView expandIcon = (ImageView) row.findViewById(R.id.image);
         if (item.hasChildren()) {
-            // draw expand icon for categories only
+            // draw expand icon for categories with more than 0 items
             expandIcon.setVisibility(View.VISIBLE);
+            if (item.expanded) {
+                expandIcon.setImageDrawable(getContext().getResources().getDrawable(android.R.drawable.arrow_up_float));
+            } else {
+                expandIcon.setImageDrawable(getContext().getResources().getDrawable(android.R.drawable.arrow_down_float));
+            }
         } else {
             expandIcon.setVisibility(View.INVISIBLE);
         }
@@ -336,18 +342,19 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         if (node.hasChildren()) {
             // get level of the category
             int level = node.level;
-            boolean isHide;
+            boolean isHide = false;
 
             // check each next item on the list, starting from the item.index + 1
             for (int i = nodeIndex + 1; i < allItems.size(); ++i) {
                 CategoryNode subnode = allItems.get(i);
-                // determine if we are hiding or showing items - check the first subnode, all others have the same visibility
-                isHide = subnode.visible; // if was visible then we want to hide
 
                 if (level == subnode.level) {
                     // stop when we reached the item at the same level
                     break;
                 }
+
+                // determine if we are hiding or showing items - check the first subnode, all others have the same visibility
+                isHide = subnode.visible; // if was visible then we want to hide
 
                 if (isHide) {
                     // ensure elements on all levels are hidden
@@ -364,6 +371,14 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
                 }
             }
 
+            // change arrow for
+            if (isHide) {
+                // when we hide items, then the arrow should refer to "I can be opened" image.
+                node.expanded = false;
+            } else {
+                node.expanded = true;
+            }
+
             // notify to force the spinner to refresh content (expand or collapse items)
             notifyDataSetChanged();
         }
@@ -371,7 +386,8 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
     /**
      * Handles changing checkboxes state. Takes children and parent nodes into consideration.
-     * @param item an item which checkbox state changes
+     *
+     * @param item      an item which checkbox state changes
      * @param isChecked true if checkbox is checked, otherwise false
      */
     private void handleCheckboxStateChange(CategoryNode item, boolean isChecked) {
