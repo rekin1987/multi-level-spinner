@@ -41,6 +41,13 @@ public class CheckedItemsPrinter {
     }
 
     /**
+     * Prints out the checked and semichecked items to the provided TextView.
+     */
+    public void printToTextView(TextView view) {
+        view.setText("Checked = " + checkedItems.size() + " : " + Arrays.toString(checkedItems.toArray()) + "\nSemichecked = " + semiCheckedItems.size() + " : " + Arrays.toString(semiCheckedItems.toArray()));
+    }
+
+    /**
      * Goes through the items looking for checked and semichecked items.
      *
      * @param items input list of {@link SpinnerItem} items
@@ -59,10 +66,4 @@ public class CheckedItemsPrinter {
         }
     }
 
-    /**
-     * Prints out the checked and semichecked items to the provided TextView.
-     */
-    public void printToTextView(TextView view) {
-        view.setText("Checked = " + checkedItems.size() + " : " + Arrays.toString(checkedItems.toArray()) + "\nSemichecked = " + semiCheckedItems.size() + " : " + Arrays.toString(semiCheckedItems.toArray()));
-    }
 }
