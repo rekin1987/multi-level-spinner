@@ -5,6 +5,7 @@ import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.AppCompatSpinner;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -34,9 +35,8 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
      * @param resource The resource ID for a layout file containing a TextView to use when
      *                 instantiating views.
      * @param items    initial list of items to be wrapped into this adapter
-     * @param parent   a {@link MultiLevelSpinner} associated with this adapter
      */
-    public MultiLevelSpinnerAdapter(@NonNull Context context, @LayoutRes int resource, List<SpinnerItem> items, MultiLevelSpinner parent) {
+    public MultiLevelSpinnerAdapter(@NonNull Context context, @LayoutRes int resource, List<SpinnerItem> items) {
         super(context, resource);
         adapterUtils = new SpinnerAdapterUtils();
         // convert a list (which is actually a tree) into flat hierarchy - start with level 0 (top level items)
@@ -46,7 +46,7 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         // configurable left intend for items
         levelIntend = DEFAULT_LEVEL_INDEX;
         inputItemsInTreeHierarchy = items;
-        spinner = parent;
+
         spinner.setSpinnerEventsListener(new OnSpinnerEventsListener() {
             @Override
             public void onSpinnerOpened(AppCompatSpinner spinner) {
@@ -92,9 +92,19 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
     }
 
     /**
+     * Associates with a {@link MultiLevelSpinner}
+     *
+     * @param parent a {@link MultiLevelSpinner} to be associated with this adapter
+     */
+    void setParentSpinner(MultiLevelSpinner parent) {
+        spinner = parent;
+    }
+
+    /**
      * Gets a custom View. Used in {@link #getView(int, View, ViewGroup)} and {@link #getDropDownView(int, View, ViewGroup)}.
      *
-     * @param position    position of the clicked item (note that in most cases it is different than index on the 'convertedItemsInFlatHierarchy' list)
+     * @param position    position of the clicked item (note that in most cases it is different than index on the 'convertedItemsInFlatHierarchy'
+     *                    list)
      * @param convertView
      * @param parent
      * @return
@@ -104,6 +114,16 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         // get item based on the index not the clicked position!
         final CategoryNode item = adapterUtils.getItemAtPosition(convertedItemsInFlatHierarchy, position);
         prepareView(row, item);
+//        if(position == 0){
+//            row.findViewById(R.id.row_wrapper).setOnTouchListener(new View.OnTouchListener() {
+//                @Override
+//                public boolean onTouch(View v, MotionEvent event) {
+//                    if (v.getParent() != null && v.getParent() instanceof MultiLevelSpinner)
+//                        ((MultiLevelSpinner) v.getParent()).performClick();
+//                    return true;
+//                }
+//            });
+//        }
         // finally return the prepared View (a row in the spinner)
         return row;
     }
@@ -174,7 +194,8 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 adapterUtils.handleCheckboxStateChange(convertedItemsInFlatHierarchy, item, isChecked);
-                // notify to force the spinner to refresh content (show proper checked/semichecked/unchecked states for children and parents of this node)
+                // notify to force the spinner to refresh content (show proper checked/semichecked/unchecked states for children and parents of
+                // this node)
                 notifyDataSetChanged();
             }
         });

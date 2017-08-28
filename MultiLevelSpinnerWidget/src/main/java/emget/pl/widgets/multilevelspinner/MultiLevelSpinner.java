@@ -2,6 +2,7 @@ package emget.pl.widgets.multilevelspinner;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.widget.SpinnerAdapter;
 
 /**
  * A Spinner allowing multiple levels in items hierarchy.
@@ -64,6 +65,14 @@ public class MultiLevelSpinner extends android.support.v7.widget.AppCompatSpinne
             if (listener != null) {
                 listener.onSpinnerClosed(this);
             }
+        }
+    }
+
+    @Override
+    public void setAdapter(SpinnerAdapter adapter) {
+        super.setAdapter(adapter);
+        if (adapter instanceof MultiLevelSpinnerAdapter) {
+            ((MultiLevelSpinnerAdapter) adapter).setParentSpinner(this);
         }
     }
 

@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
         mItems = prepareList();
 
         MultiLevelSpinner spinner = (MultiLevelSpinner) findViewById(R.id.spinner);
-        mAdapter = new MultiLevelSpinnerAdapter(this, R.layout.custom_spinner_item, mItems, spinner);
+        mAdapter = new MultiLevelSpinnerAdapter(this, R.layout.custom_spinner_item, mItems);
 
         spinner.setAdapter(mAdapter);
     }
