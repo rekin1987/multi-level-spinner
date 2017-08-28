@@ -88,6 +88,7 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
     private View getCustomView(final int position, View convertView, ViewGroup parent) {
         View row = mInflater.inflate(R.layout.custom_spinner_item, parent, false);
+        // get item based on the index not the clicked position!
         final CategoryNode item = getItemAtPosition(position);
         prepareView(row, item);
         // finally return the prepared View (a row in the spinner)
@@ -127,26 +128,8 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         TextView textView = (TextView) row.findViewById(R.id.text);
         textView.setText(item.name);
 
-        /******* checkbox selection ******/
-
+        // draw the checkbox selection based on the state: checked/unchecked/semichecked
         CheckBox checkbox = (CheckBox) row.findViewById(R.id.checkbox);
-        if (item.hasChildren()) {
-            List<CategoryNode> allChildren = getAllChildren(item);
-            int checkedChildrenCount = 0;
-            for (CategoryNode child : allChildren) {
-                if (child.getCheckboxState() == SpinnerItem.CheckboxState.CHECKED) {
-                    ++checkedChildrenCount;
-                }
-            }
-            if (allChildren.size() == checkedChildrenCount) {
-                item.setCheckboxState(SpinnerItem.CheckboxState.CHECKED);
-            } else if (checkedChildrenCount > 0) {
-                item.setCheckboxState(SpinnerItem.CheckboxState.SEMICHECKED);
-            } else {
-                item.setCheckboxState(SpinnerItem.CheckboxState.UNCHECKED);
-            }
-        }
-
         if (item.getCheckboxState() == SpinnerItem.CheckboxState.CHECKED) {
             checkbox.setChecked(true);
         } else if (item.getCheckboxState() == SpinnerItem.CheckboxState.SEMICHECKED) {
@@ -160,15 +143,7 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         checkbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                item.setCheckboxState(isChecked ? SpinnerItem.CheckboxState.CHECKED : SpinnerItem.CheckboxState.UNCHECKED);
-                if (item.hasChildren()) {
-                    // check all children
-                    List<CategoryNode> allChildren = getAllChildren(item);
-                    for (CategoryNode child : allChildren) {
-                        child.setCheckboxState(isChecked ? SpinnerItem.CheckboxState.CHECKED : SpinnerItem.CheckboxState.UNCHECKED);
-                    }
-                }
-                notifyDataSetChanged();
+                handleCheckboxStateChange(item, isChecked);
             }
         });
     }
@@ -205,7 +180,7 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
      */
     private CategoryNode getItemAtPosition(int position) {
         if (position == 0) {
-            // this is always true, item 0 is always level 0 category
+            // this is always true, item 0 is always level 0 category and always visible
             return allItems.get(0);
         }
         // first get list of visible items
@@ -222,22 +197,65 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
     /**
      * Gets list of children on all sub-levels.
      *
-     * @param node a {@link CategoryNode} to go through
+     * @param parent a {@link CategoryNode} to go through
      * @return Returns all level children for the given {@link CategoryNode} element. Can be empty list.
      */
-    private List<CategoryNode> getAllChildren(CategoryNode node) {
+    private List<CategoryNode> getAllChildren(CategoryNode parent) {
         List<CategoryNode> children = new ArrayList<>();
-        if (node.hasChildren()) {
-            for (int i = node.index + 1; i < allItems.size(); ++i) {
+        if (parent.hasChildren()) {
+            for (int i = parent.index + 1; i < allItems.size(); ++i) {
                 CategoryNode subnode = allItems.get(i);
-                if (node.level >= subnode.level) {
-                    // stop when we reached the item at the same or higher level
+                if (subnode.level <= parent.level) {
+                    // break when we reach next item at the same level as parent or higher in the tree
                     break;
                 }
                 children.add(subnode);
             }
         }
         return children;
+    }
+
+    /**
+     * Gets list of children on direct sub-level.
+     *
+     * @param parent a {@link CategoryNode} to go through
+     * @return Returns direct children for the given {@link CategoryNode} element. Can be empty list.
+     */
+    private List<CategoryNode> getDirectChildren(CategoryNode parent) {
+        List<CategoryNode> children = new ArrayList<>();
+        if (parent.hasChildren()) {
+            int expectedChildrenLevel = parent.level + 1;
+            for (int i = parent.index + 1; i < allItems.size(); ++i) {
+                CategoryNode subnode = allItems.get(i);
+                if (subnode.level > expectedChildrenLevel) {
+                    // continue when we reach the next level item
+                    continue;
+                } else if (subnode.level <= parent.level) {
+                    // break when we reach next item at the same level as parent or higher in the tree
+                    break;
+                }
+                children.add(subnode);
+            }
+        }
+        return children;
+    }
+
+    /**
+     * Finds parent for the given item.
+     *
+     * @param item child for which we are looking for a parent
+     * @return Returns a {@link CategoryNode} which is a parent of the given item or null if the item is top-level node.
+     */
+    private CategoryNode findParent(CategoryNode item) {
+        if (item.level == 0) {
+            return null;
+        }
+        for (int i = item.index - 1; i >= 0; --i) {
+            if (allItems.get(i).level < item.level) {
+                return allItems.get(i);
+            }
+        }
+        return null;
     }
 
     /**
@@ -283,6 +301,44 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
             // notify to force the spinner to refresh content (expand or collapse items)
             notifyDataSetChanged();
         }
+    }
+
+    private void handleCheckboxStateChange(CategoryNode item, boolean isChecked) {
+        item.setCheckboxState(isChecked ? SpinnerItem.CheckboxState.CHECKED : SpinnerItem.CheckboxState.UNCHECKED);
+        // if item has children mark them all the same as the current item - checked or unchecked
+        if (item.hasChildren()) {
+            // check all children
+            List<CategoryNode> allChildren = getAllChildren(item);
+            for (CategoryNode child : allChildren) {
+                child.setCheckboxState(isChecked ? SpinnerItem.CheckboxState.CHECKED : SpinnerItem.CheckboxState.UNCHECKED);
+            }
+        }
+        // now go up the list and see if a any parent state should change
+        CategoryNode parent;
+        CategoryNode currentItem = item;
+        while ((parent = findParent(currentItem)) != null) {
+            // find parent for subsequent levels until top level parent is found
+            List<CategoryNode> directChildren = getDirectChildren(parent);
+            int checkedChildrenCount = 0;
+            int semiCheckedChildrenCount = 0;
+            for (CategoryNode child : directChildren) {
+                if (child.getCheckboxState() == SpinnerItem.CheckboxState.CHECKED) {
+                    ++checkedChildrenCount;
+                } else if (child.getCheckboxState() == SpinnerItem.CheckboxState.SEMICHECKED) {
+                    ++semiCheckedChildrenCount;
+                }
+            }
+            if (directChildren.size() == checkedChildrenCount) {
+                parent.setCheckboxState(SpinnerItem.CheckboxState.CHECKED);
+            } else if (checkedChildrenCount > 0 || semiCheckedChildrenCount > 0) {
+                parent.setCheckboxState(SpinnerItem.CheckboxState.SEMICHECKED);
+            } else {
+                parent.setCheckboxState(SpinnerItem.CheckboxState.UNCHECKED);
+            }
+            currentItem = parent;
+        }
+
+        notifyDataSetChanged();
     }
 
 }
