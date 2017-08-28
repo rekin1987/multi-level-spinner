@@ -109,6 +109,7 @@ public class MultiLevelSpinner extends RelativeLayout {
                 return true;
             }
         };
+
         // set array adapter with one item - given title string
         overlayTitleSpinner.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, new String[]{titleString}));
         overlayTitleSpinner.setLayoutParams(spinnerParams);
@@ -133,7 +134,7 @@ public class MultiLevelSpinner extends RelativeLayout {
      * Inits layout.
      *
      * @param attrs The attributes of the XML tag that is inflating the view.
-     * @@param context The Context the view is running in, through which it can access the current theme, resources, etc.
+     * @param context The Context the view is running in, through which it can access the current theme, resources, etc.
      */
     private void init(Context context, AttributeSet attrs) {
         multiLevelSpinner = new MultiLevelSpinnerImpl(context, attrs);

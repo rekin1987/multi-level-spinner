@@ -146,13 +146,17 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
 
         // draw the checkbox selection based on the state: checked/unchecked/semichecked
         CheckBox checkbox = (CheckBox) row.findViewById(R.id.checkbox);
+        // for API 23 we could use Checkbox.getButtonDrawable() and Drawable.setLevel(level)
+        // see: https://developer.android.com/reference/android/graphics/drawable/LevelListDrawable.html
         if (item.checkboxState == CheckboxState.CHECKED) {
             checkbox.setChecked(true);
+            checkbox.setButtonDrawable(getContext().getResources().getDrawable(R.drawable.btn_check_on));
         } else if (item.checkboxState == CheckboxState.SEMICHECKED) {
             checkbox.setChecked(false);
-            checkbox.setBackgroundColor(getContext().getResources().getColor(android.R.color.holo_green_dark));
+            checkbox.setButtonDrawable(getContext().getResources().getDrawable(R.drawable.btn_check_semi));
         } else {
             checkbox.setChecked(false);
+            checkbox.setButtonDrawable(getContext().getResources().getDrawable(R.drawable.btn_check_off));
         }
 
         // on click for a checkbox
