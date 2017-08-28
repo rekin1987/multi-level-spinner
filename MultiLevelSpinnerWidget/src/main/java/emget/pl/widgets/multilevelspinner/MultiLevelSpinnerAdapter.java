@@ -47,18 +47,18 @@ public class MultiLevelSpinnerAdapter extends ArrayAdapter<SpinnerItem> {
         levelIntend = DEFAULT_LEVEL_INDEX;
         inputItemsInTreeHierarchy = items;
 
-        spinner.setSpinnerEventsListener(new OnSpinnerEventsListener() {
-            @Override
-            public void onSpinnerOpened(AppCompatSpinner spinner) {
-                // NO-OP
-            }
-
-            @Override
-            public void onSpinnerClosed(AppCompatSpinner spinner) {
-                // we want to propagate items checkboxes state from our internal model to external
-                adapterUtils.validateCheckedItems(inputItemsInTreeHierarchy, convertedItemsInFlatHierarchy);
-            }
-        });
+//        spinner.setSpinnerEventsListener(new OnSpinnerEventsListener() {
+//            @Override
+//            public void onSpinnerOpened(AppCompatSpinner spinner) {
+//                // NO-OP
+//            }
+//
+//            @Override
+//            public void onSpinnerClosed(AppCompatSpinner spinner) {
+//                // we want to propagate items checkboxes state from our internal model to external
+//                adapterUtils.validateCheckedItems(inputItemsInTreeHierarchy, convertedItemsInFlatHierarchy);
+//            }
+//        });
     }
 
     /**
